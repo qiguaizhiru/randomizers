@@ -1,0 +1,30 @@
+{
+  "name": "trails-character-randomizer",
+  "version": "1.0.0",
+  "description": "轨迹系列角色随机抽取器",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.trails.randomizer",
+    "productName": "轨迹系列角色抽取器",
+    "win": {
+      "target": "portable",
+      "icon": null
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "trails_data.js"
+    ],
+    "portable": {
+      "artifactName": "轨迹系列角色抽取器.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}

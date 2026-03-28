@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>轨迹系列角色随机抽取器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+    background: #0a0a1a;
+    color: #fff;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  .bg-stars {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(15, 52, 107, 0.4) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(107, 85, 15, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(15, 107, 62, 0.2) 0%, transparent 50%);
+  }
+  .star {
+    position: absolute; border-radius: 50%; background: #fff;
+    animation: twinkle ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.2; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.5); }
+  }
+
+  .container {
+    position: relative; z-index: 1;
+    max-width: 1100px; margin: 0 auto; padding: 30px 20px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center; margin-bottom: 30px;
+  }
+  .header h1 {
+    font-size: 2.8rem; font-weight: 900;
+    background: linear-gradient(135deg, #ffd700, #ff6b35, #00bfff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; background-size: 300% 300%;
+    animation: gradShift 4s ease infinite;
+  }
+  @keyframes gradShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .header .sub { color: #666; margin-top: 5px; font-size: 0.9rem; }
+  .header .sub span { color: #ffd700; font-weight: 700; }
+
+  /* Filters */
+  .filters {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 25px;
+  }
+  .filter-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-bottom: 10px; flex-wrap: wrap;
+  }
+  .filter-row:last-child { margin-bottom: 0; }
+  .filter-label {
+    font-size: 0.85rem; color: #888; min-width: 50px;
+    padding-top: 5px; flex-shrink: 0;
+  }
+  .filter-options {
+    display: flex; flex-wrap: wrap; gap: 6px; flex: 1;
+  }
+  .filter-tag {
+    padding: 4px 12px; border-radius: 15px;
+    font-size: 0.8rem; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03);
+    color: #999; transition: all 0.25s;
+    white-space: nowrap;
+  }
+  .filter-tag:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .filter-tag.active {
+    background: linear-gradient(135deg, #ffd700, #ff6b35);
+    color: #fff; border-color: transparent;
+  }
+  .filter-summary {
+    text-align: center; padding: 8px 0 0;
+    font-size: 0.85rem; color: #666;
+  }
+  .filter-summary span { color: #00bfff; font-weight: 700; }
+
+  /* Action buttons */
+  .actions {
+    display: flex; justify-content: center; gap: 20px;
+    margin-bottom: 30px; flex-wrap: wrap;
+  }
+  .draw-btn {
+    padding: 16px 50px; font-size: 1.2rem; font-weight: 700;
+    border: none; border-radius: 50px; cursor: pointer;
+    color: #fff; transition: all 0.3s;
+    font-family: 'Noto Sans SC', sans-serif;
+    position: relative; overflow: hidden;
+  }
+  .draw-btn::before {
+    content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+  }
+  .draw-btn:hover::before { left: 100%; }
+  .draw-btn:hover { transform: translateY(-3px); }
+  .draw-btn:active { transform: translateY(0) scale(0.97); }
+  .draw-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+  .btn-single {
+    background: linear-gradient(135deg, #ffd700, #ff6b35);
+    box-shadow: 0 8px 30px rgba(255, 215, 0, 0.4);
+  }
+  .btn-multi {
+    background: linear-gradient(135deg, #00bfff, #0077ff);
+    box-shadow: 0 8px 30px rgba(0, 191, 255, 0.4);
+  }
+
+  /* Results area */
+  .results {
+    display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;
+    min-height: 200px;
+  }
+
+  .result-placeholder {
+    text-align: center; width: 100%; padding: 60px 0;
+    color: #444; font-size: 1.1rem;
+  }
+  .result-placeholder .big-icon { font-size: 4rem; display: block; margin-bottom: 15px; }
+
+  /* Character card */
+  .char-card {
+    width: 220px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    overflow: hidden;
+    animation: cardPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    opacity: 0;
+    transition: transform 0.3s, box-shadow 0.3s;
+    cursor: default;
+  }
+  .char-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px rgba(255, 215, 0, 0.3);
+  }
+  @keyframes cardPop {
+    0% { opacity: 0; transform: scale(0.3) rotateY(90deg); }
+    60% { transform: scale(1.05) rotateY(-5deg); }
+    100% { opacity: 1; transform: scale(1) rotateY(0); }
+  }
+
+  .card-cover {
+    width: 100%; height: 280px;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    position: relative; overflow: hidden;
+  }
+  .card-cover img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.4s;
+  }
+  .char-card:hover .card-cover img { transform: scale(1.08); }
+
+  .card-info { padding: 15px; }
+  .card-name {
+    font-size: 1.05rem; font-weight: 700; line-height: 1.3;
+    text-align: center; margin-bottom: 10px;
+    color: #ffd700;
+  }
+  .card-tags {
+    display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;
+  }
+  .card-tag {
+    padding: 2px 8px; border-radius: 10px;
+    font-size: 0.7rem; font-weight: 500;
+    backdrop-filter: blur(8px);
+  }
+  .card-tag.series-tag {
+    background: rgba(0, 191, 255, 0.2);
+    color: #00bfff;
+    border: 1px solid rgba(0, 191, 255, 0.3);
+  }
+  .card-tag.aff-tag {
+    background: rgba(255, 215, 0, 0.15);
+    color: #daa520;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+  }
+  .card-link {
+    text-align: center; margin-top: 10px;
+  }
+  .card-link a {
+    font-size: 0.75rem; color: #00bfff; text-decoration: none;
+  }
+  .card-link a:hover { text-decoration: underline; }
+
+  /* Single card - bigger */
+  .char-card.single {
+    width: 280px;
+  }
+  .char-card.single .card-cover { height: 380px; }
+  .char-card.single .card-name { font-size: 1.3rem; }
+
+  /* Rolling animation overlay */
+  .rolling-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 100; display: none;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px);
+    justify-content: center; align-items: center;
+    flex-direction: column;
+  }
+  .rolling-overlay.active { display: flex; }
+  .rolling-text {
+    font-size: 2.5rem; font-weight: 900; color: #ffd700;
+    text-align: center; padding: 0 20px;
+    animation: pulse 0.15s ease infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+  }
+  .rolling-sub { color: #888; margin-top: 15px; font-size: 1rem; }
+
+  /* History */
+  .history-section {
+    margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 25px;
+  }
+  .history-section h3 { color: #666; font-size: 0.95rem; margin-bottom: 15px; }
+  .history-items { display: flex; flex-wrap: wrap; gap: 8px; }
+  .history-chip {
+    padding: 4px 12px; border-radius: 12px;
+    font-size: 0.75rem; color: #888;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Confetti */
+  .confetti {
+    position: fixed; z-index: 999; pointer-events: none;
+    animation: confDrop linear forwards;
+  }
+  @keyframes confDrop {
+    0% { transform: translateY(-10vh) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(1080deg) scale(0.5); opacity: 0; }
+  }
+
+  @media (max-width: 600px) {
+    .header h1 { font-size: 1.8rem; }
+    .draw-btn { padding: 12px 30px; font-size: 1rem; }
+    .char-card { width: 160px; }
+    .char-card .card-cover { height: 220px; }
+    .char-card.single { width: 220px; }
+    .char-card.single .card-cover { height: 300px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-stars" id="bgStars"></div>
+
+<div class="rolling-overlay" id="rollingOverlay">
+  <div class="rolling-text" id="rollingText">...</div>
+  <div class="rolling-sub" id="rollingSub">抽取中...</div>
+</div>
+
+<div class="container">
+  <div class="header">
+    <h1>轨迹系列角色抽取器</h1>
+    <p class="sub">数据来源：trails-game.com | 共收录 <span id="totalCount">0</span> 位角色</p>
+  </div>
+
+  <div class="filters">
+    <div class="filter-row">
+      <div class="filter-label">系列</div>
+      <div class="filter-options" id="filterSeries"></div>
+    </div>
+    <div class="filter-row">
+      <div class="filter-label">势力</div>
+      <div class="filter-options" id="filterAffiliation"></div>
+    </div>
+    <div class="filter-summary">
+      符合条件的角色：<span id="filteredCount">0</span> 位
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="draw-btn btn-single" id="btnSingle" onclick="draw(1)">
+      单抽
+    </button>
+    <button class="draw-btn btn-multi" id="btnMulti" onclick="draw(5)">
+      五连抽
+    </button>
+  </div>
+
+  <div class="results" id="results">
+    <div class="result-placeholder">
+      <span class="big-icon">&#9876;</span>
+      选择筛选条件，然后点击抽取吧！
+    </div>
+  </div>
+
+  <div class="history-section" id="historySection" style="display:none;">
+    <h3>抽取历史</h3>
+    <div class="history-items" id="historyItems"></div>
+  </div>
+</div>
+
+<script src="trails_data.js"></script>
+<script>
+(function() {
+  // State
+  let filters = { series: '全部', affiliation: '全部' };
+  let history = [];
+  let isRolling = false;
+
+  const seriesOptions = ['全部', '黎界轨迹', '创之轨迹', '闪之轨迹', '零碧轨迹', '空之轨迹'];
+  const affiliationOptions = [
+    '全部',
+    'Ⅶ班', '铁血之子',
+    '卡尔瓦德共和国', '亚拉密斯学院', '黑月', '巴泽尔理科大学', '马尔铎克警备公司', '庭园', '阿玛塔', '艾尔萨姆公国',
+    '埃雷波尼亚帝国', '帝国政府&军队', '帝国皇族&贵族', '托尔兹军官学院', '托尔兹第Ⅱ分校', '帝国解放战线', '新生帝国解放战线', '魔女&地精',
+    '克洛斯贝尔自治州', '特务支援课', '克州公务员',
+    '利贝尔王国', '利贝尔政府&军队',
+    '诺森比亚', '艾尔萨姆公国',
+    '噬身之蛇', '星杯骑士团', '僧兵厅', '游击士协会', '猎兵'
+  ];
+
+  // Init background stars
+  function initStars() {
+    const container = document.getElementById('bgStars');
+    for (let i = 0; i < 80; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = Math.random() * 100 + '%';
+      star.style.top = Math.random() * 100 + '%';
+      const size = Math.random() * 2 + 1;
+      star.style.width = size + 'px';
+      star.style.height = size + 'px';
+      star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+      star.style.animationDelay = (Math.random() * 3) + 's';
+      container.appendChild(star);
+    }
+  }
+
+  // Build filter UI
+  function makeFilterRow(elId, options, filterKey) {
+    const el = document.getElementById(elId);
+    options.forEach(opt => {
+      const tag = document.createElement('span');
+      tag.className = 'filter-tag' + (opt === '全部' ? ' active' : '');
+      tag.textContent = opt;
+      tag.onclick = () => {
+        el.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+        tag.classList.add('active');
+        filters[filterKey] = opt;
+        updateCount();
+      };
+      el.appendChild(tag);
+    });
+  }
+
+  function buildFilters() {
+    makeFilterRow('filterSeries', seriesOptions, 'series');
+    makeFilterRow('filterAffiliation', affiliationOptions, 'affiliation');
+  }
+
+  // Get filtered characters
+  function getFiltered() {
+    return trailsDatabase.filter(c => {
+      if (filters.series !== '全部') {
+        if (!c.series.includes(filters.series)) return false;
+      }
+      if (filters.affiliation !== '全部') {
+        if (!c.affiliation.includes(filters.affiliation)) return false;
+      }
+      return true;
+    });
+  }
+
+  function updateCount() {
+    const count = getFiltered().length;
+    document.getElementById('filteredCount').textContent = count;
+    document.getElementById('btnSingle').disabled = count === 0;
+    document.getElementById('btnMulti').disabled = count < 1;
+  }
+
+  // Draw
+  window.draw = function(count) {
+    if (isRolling) return;
+    const pool = getFiltered();
+    if (pool.length === 0) return;
+
+    isRolling = true;
+    const overlay = document.getElementById('rollingOverlay');
+    const rollingText = document.getElementById('rollingText');
+    const rollingSub = document.getElementById('rollingSub');
+    overlay.classList.add('active');
+    rollingSub.textContent = count === 1 ? '单抽中...' : '五连抽中...';
+
+    let tick = 0;
+    const totalTicks = 25;
+    const baseDelay = 40;
+
+    function doTick() {
+      const rand = pool[Math.floor(Math.random() * pool.length)];
+      rollingText.textContent = rand.name;
+      tick++;
+      if (tick < totalTicks) {
+        setTimeout(doTick, baseDelay + tick * tick * 1.5);
+      } else {
+        setTimeout(() => {
+          overlay.classList.remove('active');
+          isRolling = false;
+
+          const picked = [];
+          const used = new Set();
+          for (let i = 0; i < count; i++) {
+            let tries = 0;
+            let item;
+            do {
+              item = pool[Math.floor(Math.random() * pool.length)];
+              tries++;
+            } while (used.has(item.name) && tries < 100 && pool.length > count);
+            used.add(item.name);
+            picked.push(item);
+          }
+
+          showResults(picked, count === 1);
+          picked.forEach(p => history.unshift(p.name));
+          updateHistory();
+          shootConfetti();
+        }, 300);
+      }
+    }
+    doTick();
+  };
+
+  // Show results
+  function showResults(items, isSingle) {
+    const container = document.getElementById('results');
+    container.innerHTML = '';
+
+    items.forEach((item, i) => {
+      const card = document.createElement('div');
+      card.className = 'char-card' + (isSingle ? ' single' : '');
+      card.style.animationDelay = (i * 0.12) + 's';
+
+      const seriesTags = item.series.map(s =>
+        `<span class="card-tag series-tag">${s}</span>`
+      ).join('');
+
+      const affTags = item.affiliation.slice(0, 3).map(a =>
+        `<span class="card-tag aff-tag">${a}</span>`
+      ).join('');
+
+      const hasImg = item.img && item.img.startsWith('http');
+
+      card.innerHTML = `
+        <div class="card-cover">
+          ${hasImg ? `<img src="${item.img}" alt="${item.name}" onerror="this.style.display='none'">` : ''}
+        </div>
+        <div class="card-info">
+          <div class="card-name">${item.name}</div>
+          <div class="card-tags">
+            ${seriesTags}
+          </div>
+          <div class="card-tags" style="margin-top:4px;">
+            ${affTags}
+          </div>
+          <div class="card-link"><a href="https://trails-game.com/characters/" target="_blank">查看详情 &rarr;</a></div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  // History
+  function updateHistory() {
+    const section = document.getElementById('historySection');
+    const container = document.getElementById('historyItems');
+    if (history.length === 0) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    container.innerHTML = history.slice(0, 30).map(h =>
+      `<span class="history-chip">${h}</span>`
+    ).join('');
+  }
+
+  // Confetti
+  function shootConfetti() {
+    const colors = ['#ffd700', '#ff6b35', '#00bfff', '#0077ff', '#43e97b', '#f5576c'];
+    for (let i = 0; i < 50; i++) {
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.width = (Math.random() * 10 + 5) + 'px';
+      el.style.height = (Math.random() * 10 + 5) + 'px';
+      el.style.background = colors[Math.floor(Math.random() * colors.length)];
+      el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      el.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+      el.style.animationDelay = (Math.random() * 0.6) + 's';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+  }
+
+  // Init
+  initStars();
+  buildFilters();
+  document.getElementById('totalCount').textContent = trailsDatabase.length;
+  updateCount();
+})();
+</script>
+</body>
+</html>

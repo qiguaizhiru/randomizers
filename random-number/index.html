@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>随机数生成器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+    background: #0a0a1a;
+    color: #fff;
+    overflow-x: hidden;
+  }
+
+  .bg-stars {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(72, 15, 107, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(15, 82, 107, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(107, 62, 15, 0.2) 0%, transparent 50%);
+  }
+  .star {
+    position: absolute; border-radius: 50%; background: #fff;
+    animation: twinkle ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.2; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.5); }
+  }
+
+  .container {
+    position: relative; z-index: 1;
+    max-width: 800px; margin: 0 auto; padding: 40px 20px;
+  }
+
+  .header {
+    text-align: center; margin-bottom: 35px;
+  }
+  .header h1 {
+    font-size: 2.8rem; font-weight: 900;
+    background: linear-gradient(135deg, #43e97b, #38f9d7, #4facfe);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; background-size: 300% 300%;
+    animation: gradShift 4s ease infinite;
+  }
+  @keyframes gradShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  /* Input area */
+  .input-section {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 25px;
+  }
+  .input-row {
+    display: flex; gap: 15px; align-items: center;
+    flex-wrap: wrap; justify-content: center;
+  }
+  .input-group {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .input-group label {
+    font-size: 0.85rem; color: #888;
+  }
+  .input-group input {
+    width: 140px; padding: 10px 15px;
+    font-size: 1.1rem; font-weight: 600;
+    text-align: center;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    color: #fff;
+    font-family: 'Noto Sans SC', sans-serif;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .input-group input:focus {
+    border-color: rgba(67, 233, 123, 0.5);
+    box-shadow: 0 0 15px rgba(67, 233, 123, 0.15);
+  }
+  .input-group input::placeholder { color: #555; }
+
+  /* Buttons area */
+  .actions {
+    display: flex; justify-content: center; gap: 15px;
+    margin-bottom: 30px; flex-wrap: wrap;
+  }
+  .action-btn {
+    padding: 14px 40px; font-size: 1.1rem; font-weight: 700;
+    border: none; border-radius: 50px; cursor: pointer;
+    color: #fff; transition: all 0.3s;
+    font-family: 'Noto Sans SC', sans-serif;
+    position: relative; overflow: hidden;
+  }
+  .action-btn::before {
+    content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+  }
+  .action-btn:hover::before { left: 100%; }
+  .action-btn:hover { transform: translateY(-3px); }
+  .action-btn:active { transform: translateY(0) scale(0.97); }
+
+  .btn-generate {
+    background: linear-gradient(135deg, #43e97b, #38f9d7);
+    box-shadow: 0 8px 30px rgba(67, 233, 123, 0.4);
+    padding: 14px 55px; font-size: 1.2rem;
+  }
+  .btn-add {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    box-shadow: 0 6px 25px rgba(79, 172, 254, 0.35);
+  }
+  .btn-multiply {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    box-shadow: 0 6px 25px rgba(245, 87, 108, 0.35);
+  }
+  .btn-clear {
+    background: linear-gradient(135deg, #666, #444);
+    box-shadow: 0 6px 25px rgba(100, 100, 100, 0.25);
+  }
+
+  /* Results area */
+  .results-section {
+    min-height: 120px;
+    margin-bottom: 25px;
+  }
+  .results-placeholder {
+    text-align: center; padding: 50px 0;
+    color: #444; font-size: 1.1rem;
+  }
+  .results-placeholder .big-icon { font-size: 3.5rem; display: block; margin-bottom: 12px; }
+
+  .number-grid {
+    display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
+  }
+  .number-card {
+    min-width: 80px; padding: 15px 22px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    text-align: center;
+    animation: numPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    opacity: 0;
+    transition: transform 0.3s, box-shadow 0.3s;
+    cursor: default;
+  }
+  .number-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(67, 233, 123, 0.3);
+  }
+  @keyframes numPop {
+    0% { opacity: 0; transform: scale(0.3) rotateX(90deg); }
+    60% { transform: scale(1.08) rotateX(-5deg); }
+    100% { opacity: 1; transform: scale(1) rotateX(0); }
+  }
+  .number-card .num-index {
+    font-size: 0.65rem; color: #555; margin-bottom: 4px;
+  }
+  .number-card .num-value {
+    font-size: 1.6rem; font-weight: 900;
+    background: linear-gradient(135deg, #43e97b, #38f9d7);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Calculation result */
+  .calc-result {
+    margin-top: 25px;
+    text-align: center;
+    animation: fadeIn 0.5s ease forwards;
+    opacity: 0;
+  }
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+  .calc-result .calc-label {
+    font-size: 0.9rem; color: #888; margin-bottom: 8px;
+  }
+  .calc-result .calc-value {
+    font-size: 2rem; font-weight: 900;
+    padding: 15px 30px;
+    display: inline-block;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .calc-result.add-result .calc-value {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .calc-result.mul-result .calc-value {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Operation buttons area */
+  .operations {
+    display: flex; justify-content: center; gap: 15px;
+    flex-wrap: wrap;
+  }
+
+  /* Confetti */
+  .confetti {
+    position: fixed; z-index: 999; pointer-events: none;
+    animation: confDrop linear forwards;
+  }
+  @keyframes confDrop {
+    0% { transform: translateY(-10vh) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(1080deg) scale(0.5); opacity: 0; }
+  }
+
+  @media (max-width: 600px) {
+    .header h1 { font-size: 1.8rem; }
+    .input-group input { width: 100px; }
+    .action-btn { padding: 10px 25px; font-size: 0.95rem; }
+    .btn-generate { padding: 12px 35px; font-size: 1.05rem; }
+    .number-card .num-value { font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-stars" id="bgStars"></div>
+
+<div class="container">
+  <div class="header">
+    <h1>随机数生成器</h1>
+  </div>
+
+  <div class="input-section">
+    <div class="input-row">
+      <div class="input-group">
+        <label>最小值</label>
+        <input type="number" id="inputMin" value="1" placeholder="1">
+      </div>
+      <div class="input-group">
+        <label>最大值</label>
+        <input type="number" id="inputMax" value="100" placeholder="100">
+      </div>
+      <div class="input-group">
+        <label>数量</label>
+        <input type="number" id="inputCount" value="5" min="1" max="100" placeholder="5">
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="action-btn btn-generate" onclick="generate()">生成随机数</button>
+  </div>
+
+  <div class="results-section" id="resultsSection">
+    <div class="results-placeholder">
+      <span class="big-icon">&#127922;</span>
+      设定范围和数量，点击生成吧！
+    </div>
+  </div>
+
+  <div class="operations" id="operations" style="display:none;">
+    <button class="action-btn btn-add" onclick="calcSum()">相加</button>
+    <button class="action-btn btn-multiply" onclick="calcProduct()">相乘</button>
+    <button class="action-btn btn-clear" onclick="clearAll()">清空</button>
+  </div>
+
+  <div id="calcOutput"></div>
+</div>
+
+<script>
+(function() {
+  let numbers = [];
+
+  // Stars
+  const starContainer = document.getElementById('bgStars');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = Math.random() * 100 + '%';
+    s.style.top = Math.random() * 100 + '%';
+    const size = Math.random() * 2 + 1;
+    s.style.width = size + 'px';
+    s.style.height = size + 'px';
+    s.style.animationDuration = (Math.random() * 3 + 2) + 's';
+    s.style.animationDelay = (Math.random() * 3) + 's';
+    starContainer.appendChild(s);
+  }
+
+  window.generate = function() {
+    const min = parseInt(document.getElementById('inputMin').value);
+    const max = parseInt(document.getElementById('inputMax').value);
+    const count = parseInt(document.getElementById('inputCount').value);
+
+    if (isNaN(min) || isNaN(max) || isNaN(count)) {
+      alert('请输入有效的数字！');
+      return;
+    }
+    if (min > max) {
+      alert('最小值不能大于最大值！');
+      return;
+    }
+    if (count < 1 || count > 100) {
+      alert('数量请在 1~100 之间！');
+      return;
+    }
+
+    numbers = [];
+    for (let i = 0; i < count; i++) {
+      numbers.push(Math.floor(Math.random() * (max - min + 1)) + min);
+    }
+
+    showNumbers();
+    document.getElementById('operations').style.display = 'flex';
+    document.getElementById('calcOutput').innerHTML = '';
+    shootConfetti();
+  };
+
+  function showNumbers() {
+    const container = document.getElementById('resultsSection');
+    container.innerHTML = '<div class="number-grid">' +
+      numbers.map((n, i) =>
+        `<div class="number-card" style="animation-delay:${i * 0.06}s">
+          <div class="num-index">#${i + 1}</div>
+          <div class="num-value">${n}</div>
+        </div>`
+      ).join('') +
+    '</div>';
+  }
+
+  window.calcSum = function() {
+    if (numbers.length === 0) return;
+    const sum = numbers.reduce((a, b) => a + b, 0);
+    const expr = numbers.join(' + ') + ' = ' + sum;
+    document.getElementById('calcOutput').innerHTML = `
+      <div class="calc-result add-result">
+        <div class="calc-label">相加结果</div>
+        <div class="calc-value">${expr}</div>
+      </div>`;
+  };
+
+  window.calcProduct = function() {
+    if (numbers.length === 0) return;
+    const product = numbers.reduce((a, b) => a * b, 1);
+    const expr = numbers.join(' × ') + ' = ' + product;
+    document.getElementById('calcOutput').innerHTML = `
+      <div class="calc-result mul-result">
+        <div class="calc-label">相乘结果</div>
+        <div class="calc-value">${expr}</div>
+      </div>`;
+  };
+
+  window.clearAll = function() {
+    numbers = [];
+    document.getElementById('resultsSection').innerHTML = `
+      <div class="results-placeholder">
+        <span class="big-icon">&#127922;</span>
+        设定范围和数量，点击生成吧！
+      </div>`;
+    document.getElementById('operations').style.display = 'none';
+    document.getElementById('calcOutput').innerHTML = '';
+  };
+
+  function shootConfetti() {
+    const colors = ['#43e97b', '#38f9d7', '#4facfe', '#f093fb', '#f5576c', '#ffd700'];
+    for (let i = 0; i < 40; i++) {
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.width = (Math.random() * 10 + 5) + 'px';
+      el.style.height = (Math.random() * 10 + 5) + 'px';
+      el.style.background = colors[Math.floor(Math.random() * colors.length)];
+      el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      el.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+      el.style.animationDelay = (Math.random() * 0.6) + 's';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+  }
+})();
+</script>
+</body>
+</html>
