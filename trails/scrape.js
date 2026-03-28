@@ -15,13 +15,16 @@ const catMap = {
   'thors-branch': '托尔兹第Ⅱ分校', 'elf': '帝国解放战线',
   'new-elf': '新生帝国解放战线', 'witch-gnome': '魔女&地精', 'hexan_gnome': '魔女&地精',
   'crossbell': '克洛斯贝尔自治州', 'sss': '特务支援课',
-  'crossbell-gov': '克州公务员', 'liberl': '利贝尔王国',
+  'special-support-section': '特务支援课',
+  'crossbell-gov': '克州公务员', 'crossbell-authority': '克州公务员',
+  'liberl': '利贝尔王国',
   'liberl-government-military': '利贝尔政府&军队', 'liberl-authority': '利贝尔政府&军队',
   'north-ambria': '诺森比亚', 'northambria': '诺森比亚',
   'remiferia': '雷米菲利亚', '278': '艾尔萨姆公国',
   'ouroboros': '噬身之蛇', 'gralsritter': '星杯骑士团',
-  'monk': '僧兵厅', 'bracer': '游击士协会', 'jaeger': '猎兵',
-  'calvard-gov': '卡尔瓦德公务员'
+  'monk': '僧兵厅', 'papal-guard': '僧兵厅',
+  'bracer': '游击士协会', 'jaeger': '猎兵',
+  'calvard-gov': '卡尔瓦德公务员', 'calvard-authority': '卡尔瓦德公务员'
 };
 
 const seriesCats = new Set(['kuro-kai','hajimari','sen','zeroao','sora']);
