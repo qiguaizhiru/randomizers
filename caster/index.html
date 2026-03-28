@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>解说主持随机抽取器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+    background: #0a0a1a;
+    color: #fff;
+    overflow-x: hidden;
+  }
+
+  .bg-stars {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(220, 50, 50, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(255, 100, 50, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(50, 120, 220, 0.2) 0%, transparent 50%);
+  }
+  .star {
+    position: absolute; border-radius: 50%; background: #fff;
+    animation: twinkle ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.2; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.5); }
+  }
+
+  .container {
+    position: relative; z-index: 1;
+    max-width: 1000px; margin: 0 auto; padding: 30px 20px;
+  }
+
+  .header { text-align: center; margin-bottom: 30px; }
+  .header h1 {
+    font-size: 2.8rem; font-weight: 900;
+    background: linear-gradient(135deg, #ff4655, #ff8a50, #ffe259);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; background-size: 300% 300%;
+    animation: gradShift 4s ease infinite;
+  }
+  @keyframes gradShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .header .sub { color: #666; margin-top: 5px; font-size: 0.9rem; }
+  .header .sub span { color: #ff4655; font-weight: 700; }
+
+  /* Filters */
+  .filters {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 25px;
+  }
+  .filter-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-bottom: 10px; flex-wrap: wrap;
+  }
+  .filter-row:last-child { margin-bottom: 0; }
+  .filter-label {
+    font-size: 0.85rem; color: #888; min-width: 50px;
+    padding-top: 5px; flex-shrink: 0;
+  }
+  .filter-options { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+  .filter-tag {
+    padding: 5px 14px; border-radius: 15px;
+    font-size: 0.85rem; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03);
+    color: #999; transition: all 0.25s;
+    white-space: nowrap;
+  }
+  .filter-tag:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .filter-tag.active {
+    color: #fff; border-color: transparent;
+  }
+  .filter-tag.active.tag-game {
+    background: linear-gradient(135deg, #ff4655, #ff8a50);
+  }
+  .filter-tag.active.tag-role {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+  }
+  .filter-summary {
+    text-align: center; padding: 8px 0 0;
+    font-size: 0.85rem; color: #666;
+  }
+  .filter-summary span { color: #ff8a50; font-weight: 700; }
+
+  /* Buttons */
+  .actions {
+    display: flex; justify-content: center; gap: 20px;
+    margin-bottom: 30px; flex-wrap: wrap;
+  }
+  .draw-btn {
+    padding: 16px 50px; font-size: 1.2rem; font-weight: 700;
+    border: none; border-radius: 50px; cursor: pointer;
+    color: #fff; transition: all 0.3s;
+    font-family: 'Noto Sans SC', sans-serif;
+    position: relative; overflow: hidden;
+  }
+  .draw-btn::before {
+    content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+  }
+  .draw-btn:hover::before { left: 100%; }
+  .draw-btn:hover { transform: translateY(-3px); }
+  .draw-btn:active { transform: translateY(0) scale(0.97); }
+  .draw-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+  .btn-single {
+    background: linear-gradient(135deg, #ff4655, #ff8a50);
+    box-shadow: 0 8px 30px rgba(255, 70, 85, 0.4);
+  }
+  .btn-multi {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    box-shadow: 0 8px 30px rgba(79, 172, 254, 0.4);
+  }
+
+  /* Results */
+  .results {
+    display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;
+    min-height: 200px;
+  }
+  .result-placeholder {
+    text-align: center; width: 100%; padding: 60px 0;
+    color: #444; font-size: 1.1rem;
+  }
+  .result-placeholder .big-icon { font-size: 4rem; display: block; margin-bottom: 15px; }
+
+  /* Person card */
+  .person-card {
+    width: 200px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    overflow: hidden;
+    animation: cardPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    opacity: 0;
+    transition: transform 0.3s, box-shadow 0.3s;
+    cursor: default;
+    text-align: center;
+    padding: 25px 15px;
+  }
+  .person-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px rgba(255, 70, 85, 0.3);
+  }
+  @keyframes cardPop {
+    0% { opacity: 0; transform: scale(0.3) rotateY(90deg); }
+    60% { transform: scale(1.05) rotateY(-5deg); }
+    100% { opacity: 1; transform: scale(1) rotateY(0); }
+  }
+
+  .person-avatar {
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    margin: 0 auto 15px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem;
+  }
+  .avatar-lol { background: linear-gradient(135deg, rgba(255,70,85,0.2), rgba(255,138,80,0.2)); border: 2px solid rgba(255,70,85,0.3); }
+  .avatar-val { background: linear-gradient(135deg, rgba(79,172,254,0.2), rgba(0,242,254,0.2)); border: 2px solid rgba(79,172,254,0.3); }
+
+  .person-name {
+    font-size: 1.2rem; font-weight: 700; margin-bottom: 10px;
+    color: #fff;
+  }
+  .person-tags { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+  .person-tag {
+    padding: 2px 10px; border-radius: 10px;
+    font-size: 0.72rem; font-weight: 500;
+  }
+  .tag-lol {
+    background: rgba(255, 70, 85, 0.15); color: #ff4655;
+    border: 1px solid rgba(255, 70, 85, 0.25);
+  }
+  .tag-val {
+    background: rgba(79, 172, 254, 0.15); color: #4facfe;
+    border: 1px solid rgba(79, 172, 254, 0.25);
+  }
+  .tag-caster {
+    background: rgba(255, 226, 89, 0.15); color: #ffe259;
+    border: 1px solid rgba(255, 226, 89, 0.25);
+  }
+  .tag-host {
+    background: rgba(67, 233, 123, 0.15); color: #43e97b;
+    border: 1px solid rgba(67, 233, 123, 0.25);
+  }
+
+  /* Single card bigger */
+  .person-card.single { width: 260px; padding: 35px 20px; }
+  .person-card.single .person-avatar { width: 110px; height: 110px; font-size: 3rem; }
+  .person-card.single .person-name { font-size: 1.5rem; }
+
+  /* Rolling overlay */
+  .rolling-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 100; display: none;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px);
+    justify-content: center; align-items: center;
+    flex-direction: column;
+  }
+  .rolling-overlay.active { display: flex; }
+  .rolling-text {
+    font-size: 2.5rem; font-weight: 900; color: #ff4655;
+    text-align: center; padding: 0 20px;
+    animation: pulse 0.15s ease infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+  }
+  .rolling-sub { color: #888; margin-top: 15px; font-size: 1rem; }
+
+  /* History */
+  .history-section {
+    margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 25px;
+  }
+  .history-section h3 { color: #666; font-size: 0.95rem; margin-bottom: 15px; }
+  .history-items { display: flex; flex-wrap: wrap; gap: 8px; }
+  .history-chip {
+    padding: 4px 12px; border-radius: 12px;
+    font-size: 0.75rem; color: #888;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Confetti */
+  .confetti {
+    position: fixed; z-index: 999; pointer-events: none;
+    animation: confDrop linear forwards;
+  }
+  @keyframes confDrop {
+    0% { transform: translateY(-10vh) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(1080deg) scale(0.5); opacity: 0; }
+  }
+
+  @media (max-width: 600px) {
+    .header h1 { font-size: 1.8rem; }
+    .draw-btn { padding: 12px 30px; font-size: 1rem; }
+    .person-card { width: 160px; padding: 18px 10px; }
+    .person-card .person-avatar { width: 70px; height: 70px; font-size: 2rem; }
+    .person-card.single { width: 200px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-stars" id="bgStars"></div>
+
+<div class="rolling-overlay" id="rollingOverlay">
+  <div class="rolling-text" id="rollingText">...</div>
+  <div class="rolling-sub" id="rollingSub">抽取中...</div>
+</div>
+
+<div class="container">
+  <div class="header">
+    <h1>解说主持随机抽取器</h1>
+    <p class="sub">共收录 <span id="totalCount">0</span> 位解说/主持</p>
+  </div>
+
+  <div class="filters">
+    <div class="filter-row">
+      <div class="filter-label">游戏</div>
+      <div class="filter-options" id="filterGame"></div>
+    </div>
+    <div class="filter-row">
+      <div class="filter-label">职能</div>
+      <div class="filter-options" id="filterRole"></div>
+    </div>
+    <div class="filter-summary">
+      符合条件：<span id="filteredCount">0</span> 人
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="draw-btn btn-single" id="btnSingle" onclick="draw(1)">单抽</button>
+    <button class="draw-btn btn-multi" id="btnMulti" onclick="draw(5)">五连抽</button>
+  </div>
+
+  <div class="results" id="results">
+    <div class="result-placeholder">
+      <span class="big-icon">&#127908;</span>
+      选择筛选条件，然后点击抽取吧！
+    </div>
+  </div>
+
+  <div class="history-section" id="historySection" style="display:none;">
+    <h3>抽取历史</h3>
+    <div class="history-items" id="historyItems"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const database = [
+    // LOL 解说
+    { name: "Rita", game: "英雄联盟", role: "解说" },
+    { name: "瞳夕", game: "英雄联盟", role: "解说" },
+    { name: "Mage", game: "英雄联盟", role: "解说" },
+    { name: "Suki", game: "英雄联盟", role: "解说" },
+    { name: "Kris", game: "英雄联盟", role: "解说" },
+    { name: "鼓鼓", game: "英雄联盟", role: "解说" },
+    { name: "Kinko", game: "英雄联盟", role: "解说" },
+    { name: "林林王", game: "英雄联盟", role: "解说" },
+    { name: "小苍", game: "英雄联盟", role: "解说" },
+    { name: "小米小楼", game: "英雄联盟", role: "解说" },
+    { name: "苏小妍", game: "英雄联盟", role: "解说" },
+    { name: "Miss", game: "英雄联盟", role: "解说" },
+
+    // 无畏契约 解说
+    { name: "Saki", game: "无畏契约", role: "解说" },
+    { name: "Vivi", game: "无畏契约", role: "解说" },
+    { name: "白杨", game: "无畏契约", role: "解说" },
+    { name: "安妮", game: "无畏契约", role: "解说" },
+
+    // LOL 主持人
+    { name: "十月", game: "英雄联盟", role: "主持人" },
+    { name: "余霜", game: "英雄联盟", role: "主持人" },
+    { name: "希然", game: "英雄联盟", role: "主持人" },
+    { name: "小钰", game: "英雄联盟", role: "主持人" },
+    { name: "骆歆", game: "英雄联盟", role: "主持人" },
+    { name: "夏安", game: "英雄联盟", role: "主持人" },
+    { name: "松琪", game: "英雄联盟", role: "主持人" },
+    { name: "薇薇", game: "英雄联盟", role: "主持人" },
+    { name: "王徐一帆", game: "英雄联盟", role: "主持人" },
+
+    // 无畏契约 主持人
+    { name: "一意", game: "无畏契约", role: "主持人" },
+    { name: "正能量", game: "无畏契约", role: "主持人" },
+    { name: "维嘉", game: "无畏契约", role: "主持人" },
+    { name: "麦麦", game: "无畏契约", role: "主持人" },
+    { name: "曼妮", game: "无畏契约", role: "主持人" },
+  ];
+
+  let filters = { game: '全部', role: '全部' };
+  let history = [];
+  let isRolling = false;
+
+  const gameOptions = ['全部', '英雄联盟', '无畏契约'];
+  const roleOptions = ['全部', '解说', '主持人'];
+
+  const avatarEmojis = ['&#127908;', '&#127911;', '&#127897;', '&#128226;', '&#127775;', '&#9733;'];
+
+  // Stars
+  const starContainer = document.getElementById('bgStars');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = Math.random() * 100 + '%';
+    s.style.top = Math.random() * 100 + '%';
+    const size = Math.random() * 2 + 1;
+    s.style.width = size + 'px';
+    s.style.height = size + 'px';
+    s.style.animationDuration = (Math.random() * 3 + 2) + 's';
+    s.style.animationDelay = (Math.random() * 3) + 's';
+    starContainer.appendChild(s);
+  }
+
+  // Filters
+  function makeFilterRow(elId, options, filterKey, tagClass) {
+    const el = document.getElementById(elId);
+    options.forEach(opt => {
+      const tag = document.createElement('span');
+      tag.className = 'filter-tag ' + tagClass + (opt === '全部' ? ' active' : '');
+      tag.textContent = opt;
+      tag.onclick = () => {
+        el.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+        tag.classList.add('active');
+        filters[filterKey] = opt;
+        updateCount();
+      };
+      el.appendChild(tag);
+    });
+  }
+
+  makeFilterRow('filterGame', gameOptions, 'game', 'tag-game');
+  makeFilterRow('filterRole', roleOptions, 'role', 'tag-role');
+
+  function getFiltered() {
+    return database.filter(p => {
+      if (filters.game !== '全部' && p.game !== filters.game) return false;
+      if (filters.role !== '全部' && p.role !== filters.role) return false;
+      return true;
+    });
+  }
+
+  function updateCount() {
+    const count = getFiltered().length;
+    document.getElementById('filteredCount').textContent = count;
+    document.getElementById('btnSingle').disabled = count === 0;
+    document.getElementById('btnMulti').disabled = count < 1;
+  }
+
+  window.draw = function(count) {
+    if (isRolling) return;
+    const pool = getFiltered();
+    if (pool.length === 0) return;
+
+    isRolling = true;
+    const overlay = document.getElementById('rollingOverlay');
+    const rollingText = document.getElementById('rollingText');
+    const rollingSub = document.getElementById('rollingSub');
+    overlay.classList.add('active');
+    rollingSub.textContent = count === 1 ? '单抽中...' : '五连抽中...';
+
+    let tick = 0;
+    const totalTicks = 25;
+    const baseDelay = 40;
+
+    function doTick() {
+      const rand = pool[Math.floor(Math.random() * pool.length)];
+      rollingText.textContent = rand.name;
+      tick++;
+      if (tick < totalTicks) {
+        setTimeout(doTick, baseDelay + tick * tick * 1.5);
+      } else {
+        setTimeout(() => {
+          overlay.classList.remove('active');
+          isRolling = false;
+
+          const picked = [];
+          const used = new Set();
+          for (let i = 0; i < count; i++) {
+            let tries = 0;
+            let item;
+            do {
+              item = pool[Math.floor(Math.random() * pool.length)];
+              tries++;
+            } while (used.has(item.name) && tries < 100 && pool.length > count);
+            used.add(item.name);
+            picked.push(item);
+          }
+
+          showResults(picked, count === 1);
+          picked.forEach(p => history.unshift(p.name));
+          updateHistory();
+          shootConfetti();
+        }, 300);
+      }
+    }
+    doTick();
+  };
+
+  function showResults(items, isSingle) {
+    const container = document.getElementById('results');
+    container.innerHTML = '';
+
+    items.forEach((item, i) => {
+      const card = document.createElement('div');
+      card.className = 'person-card' + (isSingle ? ' single' : '');
+      card.style.animationDelay = (i * 0.12) + 's';
+
+      const isLol = item.game === '英雄联盟';
+      const avatarClass = isLol ? 'avatar-lol' : 'avatar-val';
+      const emoji = avatarEmojis[Math.floor(Math.random() * avatarEmojis.length)];
+      const gameTagClass = isLol ? 'tag-lol' : 'tag-val';
+      const roleTagClass = item.role === '解说' ? 'tag-caster' : 'tag-host';
+
+      card.innerHTML = `
+        <div class="person-avatar ${avatarClass}">${emoji}</div>
+        <div class="person-name">${item.name}</div>
+        <div class="person-tags">
+          <span class="person-tag ${gameTagClass}">${item.game}</span>
+          <span class="person-tag ${roleTagClass}">${item.role}</span>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function updateHistory() {
+    const section = document.getElementById('historySection');
+    const container = document.getElementById('historyItems');
+    if (history.length === 0) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    container.innerHTML = history.slice(0, 30).map(h =>
+      `<span class="history-chip">${h}</span>`
+    ).join('');
+  }
+
+  function shootConfetti() {
+    const colors = ['#ff4655', '#ff8a50', '#ffe259', '#4facfe', '#00f2fe', '#43e97b'];
+    for (let i = 0; i < 50; i++) {
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.width = (Math.random() * 10 + 5) + 'px';
+      el.style.height = (Math.random() * 10 + 5) + 'px';
+      el.style.background = colors[Math.floor(Math.random() * colors.length)];
+      el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      el.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+      el.style.animationDelay = (Math.random() * 0.6) + 's';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+  }
+
+  document.getElementById('totalCount').textContent = database.length;
+  updateCount();
+})();
+</script>
+</body>
+</html>
