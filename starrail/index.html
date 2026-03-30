@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星穹铁道角色随机抽取器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+    background: #0b0a14;
+    color: #fff;
+    overflow-x: hidden;
+  }
+
+  .bg-stars {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse at 30% 40%, rgba(180, 120, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 20%, rgba(255, 200, 100, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(100, 200, 255, 0.1) 0%, transparent 50%);
+  }
+  .star { position: absolute; border-radius: 50%; background: #fff; animation: twinkle ease-in-out infinite; }
+  @keyframes twinkle { 0%,100%{opacity:.2;transform:scale(1)} 50%{opacity:1;transform:scale(1.5)} }
+
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 25px 20px; }
+
+  .header { text-align: center; margin-bottom: 25px; }
+  .header h1 {
+    font-size: 2.6rem; font-weight: 900;
+    background: linear-gradient(135deg, #b388ff, #80d8ff, #ffd740);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; background-size: 300% 300%;
+    animation: gradShift 4s ease infinite;
+  }
+  @keyframes gradShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  .header .sub { color: #666; margin-top: 5px; font-size: 0.85rem; }
+  .header .sub span { color: #b388ff; font-weight: 700; }
+
+  .filters {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px; padding: 18px; margin-bottom: 20px;
+  }
+  .filter-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .filter-row:last-child { margin-bottom: 0; }
+  .filter-label { font-size: 0.8rem; color: #888; min-width: 50px; padding-top: 5px; flex-shrink: 0; }
+  .filter-options { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+  .filter-tag {
+    padding: 4px 11px; border-radius: 14px; font-size: 0.78rem; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);
+    color: #999; transition: all 0.25s; white-space: nowrap;
+  }
+  .filter-tag:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .filter-tag.active { color: #fff; border-color: transparent; }
+  .filter-tag.active.f-element { background: linear-gradient(135deg, #66bb6a, #26a69a); }
+  .filter-tag.active.f-path { background: linear-gradient(135deg, #b388ff, #7c4dff); }
+  .filter-tag.active.f-star { background: linear-gradient(135deg, #ffd740, #ffa726); }
+  .filter-summary { text-align: center; padding: 6px 0 0; font-size: 0.8rem; color: #666; }
+  .filter-summary span { color: #b388ff; font-weight: 700; }
+
+  .actions { display: flex; justify-content: center; gap: 20px; margin-bottom: 25px; flex-wrap: wrap; }
+  .draw-btn {
+    padding: 14px 45px; font-size: 1.15rem; font-weight: 700;
+    border: none; border-radius: 50px; cursor: pointer;
+    color: #fff; transition: all 0.3s; font-family: 'Noto Sans SC', sans-serif;
+    position: relative; overflow: hidden;
+  }
+  .draw-btn::before {
+    content:''; position:absolute; top:0; left:-100%; width:100%; height:100%;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);
+    transition: left 0.5s;
+  }
+  .draw-btn:hover::before { left: 100%; }
+  .draw-btn:hover { transform: translateY(-3px); }
+  .draw-btn:active { transform: translateY(0) scale(0.97); }
+  .draw-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+  .btn-single { background: linear-gradient(135deg, #b388ff, #7c4dff); box-shadow: 0 8px 30px rgba(179,136,255,0.35); }
+  .btn-multi { background: linear-gradient(135deg, #80d8ff, #40c4ff); box-shadow: 0 8px 30px rgba(128,216,255,0.35); }
+
+  .results { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; min-height: 200px; }
+  .result-placeholder { text-align: center; width: 100%; padding: 50px 0; color: #444; font-size: 1rem; }
+  .result-placeholder .big-icon { font-size: 3.5rem; display: block; margin-bottom: 12px; }
+
+  .char-card {
+    width: 185px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; overflow: hidden;
+    animation: cardPop 0.6s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+    opacity: 0; transition: transform 0.3s, box-shadow 0.3s; cursor: default;
+  }
+  .char-card:hover { transform: translateY(-8px); box-shadow: 0 12px 35px rgba(179,136,255,0.3); }
+  @keyframes cardPop { 0%{opacity:0;transform:scale(.3) rotateY(90deg)} 60%{transform:scale(1.05) rotateY(-5deg)} 100%{opacity:1;transform:scale(1) rotateY(0)} }
+
+  .card-cover {
+    width: 100%; height: 200px; position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; font-size: 4rem;
+  }
+  .card-cover img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
+  .char-card:hover .card-cover img { transform: scale(1.08); }
+  .card-cover .star-badge {
+    position: absolute; top: 6px; right: 6px; padding: 2px 8px; border-radius: 8px;
+    font-size: 0.65rem; font-weight: 700; backdrop-filter: blur(8px);
+  }
+  .star-badge.s5 { background: rgba(255,215,0,0.8); color: #000; }
+  .star-badge.s4 { background: rgba(179,136,255,0.8); color: #fff; }
+  .card-cover .element-badge {
+    position: absolute; top: 6px; left: 6px; width: 28px; height: 28px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; backdrop-filter: blur(8px);
+  }
+
+  .bg-physical { background: linear-gradient(135deg, #1a1a1a, #2e2e2e); }
+  .bg-fire { background: linear-gradient(135deg, #1a0a0a, #2e1010); }
+  .bg-ice { background: linear-gradient(135deg, #0a1a1a, #102e2e); }
+  .bg-thunder { background: linear-gradient(135deg, #1a0a1a, #2e102e); }
+  .bg-wind { background: linear-gradient(135deg, #0a1a0f, #102e1a); }
+  .bg-quantum { background: linear-gradient(135deg, #0f0a1a, #1a102e); }
+  .bg-imaginary { background: linear-gradient(135deg, #1a1a0a, #2e2e10); }
+
+  .e-physical { background: rgba(200,200,200,0.6); }
+  .e-fire { background: rgba(255,80,50,0.6); }
+  .e-ice { background: rgba(100,220,255,0.6); }
+  .e-thunder { background: rgba(180,100,255,0.6); }
+  .e-wind { background: rgba(100,230,180,0.6); }
+  .e-quantum { background: rgba(120,80,220,0.6); }
+  .e-imaginary { background: rgba(255,220,80,0.6); }
+
+  .card-info { padding: 10px 12px; }
+  .card-name { font-size: 0.9rem; font-weight: 700; text-align: center; margin-bottom: 6px; }
+  .card-tags { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
+  .card-tag {
+    padding: 1px 7px; border-radius: 8px; font-size: 0.62rem; font-weight: 500;
+    background: rgba(255,255,255,0.06); color: #aaa; border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .char-card.single { width: 260px; }
+  .char-card.single .card-cover { height: 300px; }
+  .char-card.single .card-name { font-size: 1.2rem; }
+
+  .rolling-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 100; display: none; background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px); justify-content: center; align-items: center; flex-direction: column;
+  }
+  .rolling-overlay.active { display: flex; }
+  .rolling-text { font-size: 2.5rem; font-weight: 900; color: #b388ff; text-align: center; padding: 0 20px; animation: pulse 0.15s ease infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.02)} }
+  .rolling-sub { color: #888; margin-top: 15px; font-size: 1rem; }
+
+  .history-section { margin-top: 35px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px; }
+  .history-section h3 { color: #666; font-size: 0.9rem; margin-bottom: 12px; }
+  .history-items { display: flex; flex-wrap: wrap; gap: 6px; }
+  .history-chip { padding: 3px 10px; border-radius: 10px; font-size: 0.72rem; color: #888; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
+
+  .confetti { position: fixed; z-index: 999; pointer-events: none; animation: confDrop linear forwards; }
+  @keyframes confDrop { 0%{transform:translateY(-10vh) rotate(0) scale(1);opacity:1} 100%{transform:translateY(110vh) rotate(1080deg) scale(.5);opacity:0} }
+
+  @media (max-width:600px) {
+    .header h1 { font-size: 1.8rem; }
+    .draw-btn { padding: 10px 28px; font-size: 1rem; }
+    .char-card { width: 150px; }
+    .char-card .card-cover { height: 170px; }
+    .char-card.single { width: 210px; }
+    .char-card.single .card-cover { height: 250px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-stars" id="bgStars"></div>
+<div class="rolling-overlay" id="rollingOverlay">
+  <div class="rolling-text" id="rollingText">...</div>
+  <div class="rolling-sub" id="rollingSub">抽取中...</div>
+</div>
+
+<div class="container">
+  <div class="header">
+    <h1>星穹铁道角色抽取器</h1>
+    <p class="sub">数据来源：米游社开拓者笔记 | 共收录 <span id="totalCount">0</span> 位角色</p>
+  </div>
+
+  <div class="filters">
+    <div class="filter-row"><div class="filter-label">属性</div><div class="filter-options" id="fElement"></div></div>
+    <div class="filter-row"><div class="filter-label">命途</div><div class="filter-options" id="fPath"></div></div>
+    <div class="filter-row"><div class="filter-label">星级</div><div class="filter-options" id="fStar"></div></div>
+    <div class="filter-summary">符合条件：<span id="filteredCount">0</span> 位角色</div>
+  </div>
+
+  <div class="actions">
+    <button class="draw-btn btn-single" id="btnSingle" onclick="draw(1)">单抽</button>
+    <button class="draw-btn btn-multi" id="btnMulti" onclick="draw(5)">五连抽</button>
+  </div>
+
+  <div class="results" id="results">
+    <div class="result-placeholder"><span class="big-icon">&#128646;</span>选择筛选条件，然后点击抽取吧！</div>
+  </div>
+
+  <div class="history-section" id="historySection" style="display:none;">
+    <h3>抽取历史</h3>
+    <div class="history-items" id="historyItems"></div>
+  </div>
+</div>
+
+<script src="starrail_data.js"></script>
+<script>
+(function() {
+  let filters = { element:'全部', path:'全部', star:'全部' };
+  let history = [];
+  let isRolling = false;
+
+  const elementOpts = ['全部','物理','火','冰','雷','风','量子','虚数'];
+  const pathOpts = ['全部','毁灭','巡猎','智识','同谐','虚无','存护','丰饶','记忆','欢愉'];
+  const starOpts = ['全部','五星','四星'];
+
+  const elementEmoji = {'物理':'&#9876;','火':'&#128293;','冰':'&#10052;','雷':'&#9889;','风':'&#127744;','量子':'&#9883;','虚数':'&#10024;'};
+  const elementBg = {'物理':'bg-physical','火':'bg-fire','冰':'bg-ice','雷':'bg-thunder','风':'bg-wind','量子':'bg-quantum','虚数':'bg-imaginary'};
+  const elementBadge = {'物理':'e-physical','火':'e-fire','冰':'e-ice','雷':'e-thunder','风':'e-wind','量子':'e-quantum','虚数':'e-imaginary'};
+
+  const sc = document.getElementById('bgStars');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = Math.random()*100+'%'; s.style.top = Math.random()*100+'%';
+    const sz = Math.random()*2+1; s.style.width=sz+'px'; s.style.height=sz+'px';
+    s.style.animationDuration = (Math.random()*3+2)+'s'; s.style.animationDelay = (Math.random()*3)+'s';
+    sc.appendChild(s);
+  }
+
+  function makeRow(id, opts, key, cls) {
+    const el = document.getElementById(id);
+    opts.forEach(opt => {
+      const t = document.createElement('span');
+      t.className = 'filter-tag ' + cls + (opt==='全部'?' active':'');
+      t.textContent = opt;
+      t.onclick = () => {
+        el.querySelectorAll('.filter-tag').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        filters[key] = opt;
+        updateCount();
+      };
+      el.appendChild(t);
+    });
+  }
+
+  makeRow('fElement', elementOpts, 'element', 'f-element');
+  makeRow('fPath', pathOpts, 'path', 'f-path');
+  makeRow('fStar', starOpts, 'star', 'f-star');
+
+  function getFiltered() {
+    return starrailDatabase.filter(c => {
+      if (filters.element !== '全部' && c.element !== filters.element) return false;
+      if (filters.path !== '全部' && c.path !== filters.path) return false;
+      if (filters.star !== '全部' && c.star !== filters.star) return false;
+      return true;
+    });
+  }
+
+  function updateCount() {
+    const n = getFiltered().length;
+    document.getElementById('filteredCount').textContent = n;
+    document.getElementById('btnSingle').disabled = n === 0;
+    document.getElementById('btnMulti').disabled = n < 1;
+  }
+
+  window.draw = function(count) {
+    if (isRolling) return;
+    const pool = getFiltered();
+    if (!pool.length) return;
+    isRolling = true;
+    const ov = document.getElementById('rollingOverlay');
+    const rt = document.getElementById('rollingText');
+    document.getElementById('rollingSub').textContent = count===1?'单抽中...':'五连抽中...';
+    ov.classList.add('active');
+    let tick = 0, total = 25;
+    function doTick() {
+      rt.textContent = pool[Math.floor(Math.random()*pool.length)].name;
+      tick++;
+      if (tick < total) setTimeout(doTick, 40 + tick*tick*1.5);
+      else setTimeout(() => {
+        ov.classList.remove('active');
+        isRolling = false;
+        const picked = [], used = new Set();
+        for (let i = 0; i < count; i++) {
+          let t = 0, item;
+          do { item = pool[Math.floor(Math.random()*pool.length)]; t++; }
+          while (used.has(item.name) && t < 100 && pool.length > count);
+          used.add(item.name); picked.push(item);
+        }
+        showResults(picked, count===1);
+        picked.forEach(p => history.unshift(p.name));
+        updateHistory(); shootConfetti();
+      }, 300);
+    }
+    doTick();
+  };
+
+  function thumbUrl(url) {
+    if (!url) return url;
+    if (url.includes('mihoyo.com')) {
+      return url + '?x-oss-process=image/resize,m_fill,w_256,h_256/quality,Q_80';
+    }
+    return url;
+  }
+
+  function showResults(items, single) {
+    const c = document.getElementById('results');
+    c.innerHTML = '';
+    items.forEach((item, i) => {
+      const card = document.createElement('div');
+      card.className = 'char-card' + (single?' single':'');
+      card.style.animationDelay = (i*0.12)+'s';
+      const bg = elementBg[item.element] || 'bg-quantum';
+      const eBadge = elementBadge[item.element] || '';
+      const eEmoji = elementEmoji[item.element] || '';
+      const starClass = item.star === '五星' ? 's5' : 's4';
+      const hasImg = item.img && item.img.startsWith('http');
+      const tags = [item.path, item.element].filter(Boolean)
+        .map(t => `<span class="card-tag">${t}</span>`).join('');
+
+      card.innerHTML = `
+        <div class="card-cover ${bg}">
+          ${hasImg ? `<img loading="lazy" src="${thumbUrl(item.img)}" alt="${item.name}" onerror="this.style.display='none';this.parentElement.innerHTML+='<div style=\\'font-size:4rem;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)\\'>${eEmoji}</div>'">` : `<div>${eEmoji || '&#10024;'}</div>`}
+          ${item.star ? `<span class="star-badge ${starClass}">${item.star}</span>` : ''}
+          ${item.element ? `<span class="element-badge ${eBadge}">${eEmoji}</span>` : ''}
+        </div>
+        <div class="card-info">
+          <div class="card-name">${item.name}</div>
+          <div class="card-tags">${tags}</div>
+        </div>
+      `;
+      c.appendChild(card);
+    });
+  }
+
+  function updateHistory() {
+    const s = document.getElementById('historySection');
+    const c = document.getElementById('historyItems');
+    if (!history.length) { s.style.display='none'; return; }
+    s.style.display='block';
+    c.innerHTML = history.slice(0,30).map(h => `<span class="history-chip">${h}</span>`).join('');
+  }
+
+  function shootConfetti() {
+    const colors = ['#b388ff','#80d8ff','#ffd740','#ff5252','#69f0ae','#e040fb'];
+    for (let i = 0; i < 50; i++) {
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      el.style.left = Math.random()*100+'vw';
+      el.style.width = (Math.random()*10+5)+'px'; el.style.height = (Math.random()*10+5)+'px';
+      el.style.background = colors[Math.floor(Math.random()*colors.length)];
+      el.style.borderRadius = Math.random()>.5?'50%':'2px';
+      el.style.animationDuration = (Math.random()*2+1.5)+'s';
+      el.style.animationDelay = (Math.random()*.6)+'s';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+  }
+
+  document.getElementById('totalCount').textContent = starrailDatabase.length;
+  updateCount();
+})();
+</script>
+</body>
+</html>
