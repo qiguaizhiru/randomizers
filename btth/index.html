@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>斗破苍穹女性角色随机抽取器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+    background: #0c0812;
+    color: #fff;
+    overflow-x: hidden;
+  }
+
+  .bg-stars {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse at 30% 40%, rgba(255, 100, 50, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 20%, rgba(200, 80, 200, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(255, 200, 100, 0.08) 0%, transparent 50%);
+  }
+  .star { position: absolute; border-radius: 50%; background: #fff; animation: twinkle ease-in-out infinite; }
+  @keyframes twinkle { 0%,100%{opacity:.2;transform:scale(1)} 50%{opacity:1;transform:scale(1.5)} }
+
+  .container { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+
+  .header { text-align: center; margin-bottom: 30px; }
+  .header h1 {
+    font-size: 2.6rem; font-weight: 900;
+    background: linear-gradient(135deg, #ff6b35, #f7971e, #ff4081);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; background-size: 300% 300%;
+    animation: gradShift 4s ease infinite;
+  }
+  @keyframes gradShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  .header .sub { color: #666; margin-top: 5px; font-size: 0.85rem; }
+  .header .sub span { color: #ff6b35; font-weight: 700; }
+
+  .filters {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px; padding: 18px; margin-bottom: 25px;
+  }
+  .filter-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .filter-row:last-child { margin-bottom: 0; }
+  .filter-label { font-size: 0.82rem; color: #888; min-width: 50px; padding-top: 5px; flex-shrink: 0; }
+  .filter-options { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+  .filter-tag {
+    padding: 4px 12px; border-radius: 14px; font-size: 0.8rem; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);
+    color: #999; transition: all 0.25s; white-space: nowrap;
+  }
+  .filter-tag:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .filter-tag.active { color: #fff; border-color: transparent; background: linear-gradient(135deg, #ff6b35, #ff4081); }
+  .filter-summary { text-align: center; padding: 6px 0 0; font-size: 0.82rem; color: #666; }
+  .filter-summary span { color: #ff6b35; font-weight: 700; }
+
+  .actions { display: flex; justify-content: center; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+  .draw-btn {
+    padding: 14px 45px; font-size: 1.15rem; font-weight: 700;
+    border: none; border-radius: 50px; cursor: pointer;
+    color: #fff; transition: all 0.3s; font-family: 'Noto Sans SC', sans-serif;
+    position: relative; overflow: hidden;
+  }
+  .draw-btn::before {
+    content:''; position:absolute; top:0; left:-100%; width:100%; height:100%;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);
+    transition: left 0.5s;
+  }
+  .draw-btn:hover::before { left: 100%; }
+  .draw-btn:hover { transform: translateY(-3px); }
+  .draw-btn:active { transform: translateY(0) scale(0.97); }
+  .draw-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+  .btn-single { background: linear-gradient(135deg, #ff6b35, #f7971e); box-shadow: 0 8px 30px rgba(255,107,53,0.35); }
+  .btn-multi { background: linear-gradient(135deg, #ff4081, #c51162); box-shadow: 0 8px 30px rgba(255,64,129,0.35); }
+
+  .results { display: flex; flex-wrap: wrap; gap: 18px; justify-content: center; min-height: 200px; }
+  .result-placeholder { text-align: center; width: 100%; padding: 60px 0; color: #444; font-size: 1rem; }
+  .result-placeholder .big-icon { font-size: 4rem; display: block; margin-bottom: 12px; }
+
+  .char-card {
+    width: 200px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; overflow: hidden; text-align: center; padding: 25px 15px;
+    animation: cardPop 0.6s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+    opacity: 0; transition: transform 0.3s, box-shadow 0.3s; cursor: default;
+  }
+  .char-card:hover { transform: translateY(-8px); box-shadow: 0 12px 35px rgba(255,107,53,0.3); }
+  @keyframes cardPop { 0%{opacity:0;transform:scale(.3) rotateY(90deg)} 60%{transform:scale(1.05) rotateY(-5deg)} 100%{opacity:1;transform:scale(1) rotateY(0)} }
+
+  .char-avatar {
+    width: 90px; height: 90px; border-radius: 50%; margin: 0 auto 15px;
+    display: flex; align-items: center; justify-content: center; font-size: 2.5rem;
+    background: linear-gradient(135deg, rgba(255,107,53,0.2), rgba(255,64,129,0.2));
+    border: 2px solid rgba(255,107,53,0.3);
+  }
+  .char-name { font-size: 1.15rem; font-weight: 700; margin-bottom: 8px; color: #ff6b35; }
+  .char-desc { font-size: 0.72rem; color: #888; line-height: 1.4; margin-bottom: 8px; }
+  .char-tags { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+  .char-tag {
+    padding: 2px 8px; border-radius: 10px; font-size: 0.65rem; font-weight: 500;
+  }
+  .tag-tier { background: rgba(255,107,53,0.15); color: #ff6b35; border: 1px solid rgba(255,107,53,0.25); }
+  .tag-source { background: rgba(255,64,129,0.15); color: #ff4081; border: 1px solid rgba(255,64,129,0.25); }
+
+  .char-card.single { width: 260px; padding: 35px 20px; }
+  .char-card.single .char-avatar { width: 110px; height: 110px; font-size: 3rem; }
+  .char-card.single .char-name { font-size: 1.4rem; }
+
+  .rolling-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 100; display: none; background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px); justify-content: center; align-items: center; flex-direction: column;
+  }
+  .rolling-overlay.active { display: flex; }
+  .rolling-text { font-size: 2.5rem; font-weight: 900; color: #ff6b35; text-align: center; padding: 0 20px; animation: pulse 0.15s ease infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.02)} }
+  .rolling-sub { color: #888; margin-top: 15px; font-size: 1rem; }
+
+  .history-section { margin-top: 35px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px; }
+  .history-section h3 { color: #666; font-size: 0.9rem; margin-bottom: 12px; }
+  .history-items { display: flex; flex-wrap: wrap; gap: 6px; }
+  .history-chip { padding: 3px 10px; border-radius: 10px; font-size: 0.72rem; color: #888; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
+
+  .confetti { position: fixed; z-index: 999; pointer-events: none; animation: confDrop linear forwards; }
+  @keyframes confDrop { 0%{transform:translateY(-10vh) rotate(0) scale(1);opacity:1} 100%{transform:translateY(110vh) rotate(1080deg) scale(.5);opacity:0} }
+
+  @media (max-width:600px) {
+    .header h1 { font-size: 1.8rem; }
+    .draw-btn { padding: 10px 28px; font-size: 1rem; }
+    .char-card { width: 160px; padding: 18px 10px; }
+    .char-card.single { width: 200px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-stars" id="bgStars"></div>
+<div class="rolling-overlay" id="rollingOverlay">
+  <div class="rolling-text" id="rollingText">...</div>
+  <div class="rolling-sub" id="rollingSub">抽取中...</div>
+</div>
+
+<div class="container">
+  <div class="header">
+    <h1>斗破苍穹女性角色抽取器</h1>
+    <p class="sub">小说 + 动画全收录 | 共 <span id="totalCount">0</span> 位女性角色</p>
+  </div>
+
+  <div class="filters">
+    <div class="filter-row"><div class="filter-label">级别</div><div class="filter-options" id="fTier"></div></div>
+    <div class="filter-row"><div class="filter-label">来源</div><div class="filter-options" id="fSource"></div></div>
+    <div class="filter-summary">符合条件：<span id="filteredCount">0</span> 位角色</div>
+  </div>
+
+  <div class="actions">
+    <button class="draw-btn btn-single" id="btnSingle" onclick="draw(1)">单抽</button>
+    <button class="draw-btn btn-multi" id="btnMulti" onclick="draw(5)">五连抽</button>
+  </div>
+
+  <div class="results" id="results">
+    <div class="result-placeholder"><span class="big-icon">&#128293;</span>选择筛选条件，然后点击抽取吧！</div>
+  </div>
+
+  <div class="history-section" id="historySection" style="display:none;">
+    <h3>抽取历史</h3>
+    <div class="history-items" id="historyItems"></div>
+  </div>
+</div>
+
+<script>
+const btthDatabase = [
+  // 女主角
+  { name: "萧薰儿", desc: "古族公主，萧炎青梅竹马，金帝焚天炎拥有者，最终成为斗帝", tier: "女主角", source: "小说+动画" },
+  { name: "美杜莎", desc: "蛇人族女王，七彩吞天蟒血脉，萧潇之母，最终成为斗帝", tier: "女主角", source: "小说+动画" },
+  { name: "小医仙", desc: "厄难毒体拥有者，萧炎最亲密伙伴之一，最终成为斗圣", tier: "女主角", source: "小说+动画" },
+  { name: "云韵", desc: "云岚宗第九代宗主，后成为花宗宗主", tier: "女主角", source: "小说+动画" },
+  { name: "紫妍", desc: "古虚龙族龙帝之女(祝坤之女)，真身为远古虚空龙", tier: "女主角", source: "小说+动画" },
+
+  // 重要配角
+  { name: "纳兰嫣然", desc: "纳兰家族天才，曾退婚萧炎，云韵弟子", tier: "重要配角", source: "小说+动画" },
+  { name: "雅妃", desc: "迦玛帝国拍卖行首席拍卖师，米特尔家族族长", tier: "重要配角", source: "小说+动画" },
+  { name: "青鳞", desc: "沙漠铁佣兵团侍女，拥有三花瞳蛇瞳，可控制蛇型魔兽", tier: "重要配角", source: "小说+动画" },
+  { name: "韩月", desc: "天北城韩家大小姐，迦南学院内院学员，银发美人", tier: "重要配角", source: "小说+动画" },
+  { name: "夭夜", desc: "迦玛帝国公主，后成为女皇", tier: "重要配角", source: "小说" },
+  { name: "萧潇", desc: "萧炎与美杜莎之女，结尾时八星斗圣", tier: "重要配角", source: "小说" },
+  { name: "凤清儿", desc: "风雷阁雷尊者弟子，天妖凰族成员", tier: "重要配角", source: "小说+动画" },
+  { name: "曹颖", desc: "曹丹妹妹，人称曹家妖女，天才炼药师", tier: "重要配角", source: "小说+动画" },
+  { name: "药灵", desc: "药族天才之女，最有可能将灵魂修炼至帝级", tier: "重要配角", source: "小说" },
+
+  // 配角
+  { name: "萧媚", desc: "萧族成员，萧炎堂妹", tier: "配角", source: "小说+动画" },
+  { name: "萧玉", desc: "萧族女性成员", tier: "配角", source: "小说+动画" },
+  { name: "韩雪", desc: "韩月妹妹，三星斗王，曾救助受伤的萧炎", tier: "配角", source: "小说" },
+  { name: "雪魅", desc: "炼药师工会弟子，银色长发，迦南学院学员", tier: "配角", source: "小说+动画" },
+  { name: "白薇", desc: "丹塔五大家族白家天才，年轻的六品炼药师", tier: "配角", source: "小说" },
+  { name: "丹晨", desc: "丹塔顶尖年轻炼药师，排名在曹颖之上", tier: "配角", source: "小说" },
+  { name: "叶欣蓝", desc: "叶重孙女，请萧炎扮演未婚夫应对家族考核", tier: "配角", source: "小说" },
+  { name: "慕青鸾", desc: "风尊者弟子，天鸾一族成员，星陨阁顶尖弟子", tier: "配角", source: "小说+动画" },
+  { name: "唐火儿", desc: "焚炎谷相关女性角色", tier: "配角", source: "小说" },
+  { name: "苏媚", desc: "黑角域罗刹门宗主，妩媚凶狠", tier: "配角", source: "小说" },
+  { name: "幽泉", desc: "星陨阁最有天赋的年轻弟子，17岁斗王", tier: "配角", source: "小说" },
+  { name: "花锦", desc: "花宗副宗主，与云韵对立", tier: "配角", source: "小说" },
+
+  // 次要角色
+  { name: "青仙子", desc: "花宗太上长老，天府联盟副盟主，高阶半圣", tier: "次要角色", source: "小说" },
+  { name: "华仙子", desc: "青仙子师妹，花宗长老", tier: "次要角色", source: "小说" },
+  { name: "花婆婆", desc: "花宗前任宗主，将斗气和宗主玉传给云韵", tier: "次要角色", source: "小说" },
+  { name: "玄衣", desc: "丹塔三巨头之一，九转斗尊巅峰，药老旧情人", tier: "次要角色", source: "小说" },
+  { name: "若琳导师", desc: "迦南学院女性导师", tier: "次要角色", source: "小说+动画" },
+  { name: "柳菲", desc: "迦南学院女学员，曾被薰儿掌掴", tier: "次要角色", source: "小说+动画" },
+  { name: "彩鳞", desc: "美杜莎的人形态名字，七彩吞天蟒", tier: "次要角色", source: "小说+动画" },
+  { name: "萧青", desc: "萧族女性成员", tier: "次要角色", source: "小说" },
+  { name: "火稚", desc: "炎族女性角色", tier: "次要角色", source: "小说" },
+  { name: "绿蛮", desc: "天蛇府斗皇级强者", tier: "次要角色", source: "小说" },
+  { name: "罗小天", desc: "任性但不恶毒的少女", tier: "次要角色", source: "小说" },
+];
+
+(function() {
+  let filters = { tier: '全部', source: '全部' };
+  let history = [];
+  let isRolling = false;
+
+  const tierOpts = ['全部', '女主角', '重要配角', '配角', '次要角色'];
+  const sourceOpts = ['全部', '小说+动画', '小说'];
+
+  const avatarEmojis = ['&#127942;','&#128142;','&#128293;','&#10024;','&#127800;','&#9733;','&#128171;','&#127774;'];
+
+  const sc = document.getElementById('bgStars');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = Math.random()*100+'%'; s.style.top = Math.random()*100+'%';
+    const sz = Math.random()*2+1; s.style.width=sz+'px'; s.style.height=sz+'px';
+    s.style.animationDuration = (Math.random()*3+2)+'s'; s.style.animationDelay = (Math.random()*3)+'s';
+    sc.appendChild(s);
+  }
+
+  function makeRow(id, opts, key) {
+    const el = document.getElementById(id);
+    opts.forEach(opt => {
+      const t = document.createElement('span');
+      t.className = 'filter-tag' + (opt==='全部'?' active':'');
+      t.textContent = opt;
+      t.onclick = () => {
+        el.querySelectorAll('.filter-tag').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        filters[key] = opt;
+        updateCount();
+      };
+      el.appendChild(t);
+    });
+  }
+
+  makeRow('fTier', tierOpts, 'tier');
+  makeRow('fSource', sourceOpts, 'source');
+
+  function getFiltered() {
+    return btthDatabase.filter(c => {
+      if (filters.tier !== '全部' && c.tier !== filters.tier) return false;
+      if (filters.source !== '全部' && c.source !== filters.source) return false;
+      return true;
+    });
+  }
+
+  function updateCount() {
+    const n = getFiltered().length;
+    document.getElementById('filteredCount').textContent = n;
+    document.getElementById('btnSingle').disabled = n === 0;
+    document.getElementById('btnMulti').disabled = n < 1;
+  }
+
+  window.draw = function(count) {
+    if (isRolling) return;
+    const pool = getFiltered();
+    if (!pool.length) return;
+    isRolling = true;
+    const ov = document.getElementById('rollingOverlay');
+    const rt = document.getElementById('rollingText');
+    document.getElementById('rollingSub').textContent = count===1?'单抽中...':'五连抽中...';
+    ov.classList.add('active');
+    let tick = 0, total = 25;
+    function doTick() {
+      rt.textContent = pool[Math.floor(Math.random()*pool.length)].name;
+      tick++;
+      if (tick < total) setTimeout(doTick, 40 + tick*tick*1.5);
+      else setTimeout(() => {
+        ov.classList.remove('active');
+        isRolling = false;
+        const picked = [], used = new Set();
+        for (let i = 0; i < count; i++) {
+          let t = 0, item;
+          do { item = pool[Math.floor(Math.random()*pool.length)]; t++; }
+          while (used.has(item.name) && t < 100 && pool.length > count);
+          used.add(item.name); picked.push(item);
+        }
+        showResults(picked, count===1);
+        picked.forEach(p => history.unshift(p.name));
+        updateHistory(); shootConfetti();
+      }, 300);
+    }
+    doTick();
+  };
+
+  function showResults(items, single) {
+    const c = document.getElementById('results');
+    c.innerHTML = '';
+    items.forEach((item, i) => {
+      const card = document.createElement('div');
+      card.className = 'char-card' + (single?' single':'');
+      card.style.animationDelay = (i*0.12)+'s';
+      const emoji = avatarEmojis[Math.floor(Math.random()*avatarEmojis.length)];
+
+      card.innerHTML = `
+        <div class="char-avatar">${emoji}</div>
+        <div class="char-name">${item.name}</div>
+        <div class="char-desc">${item.desc}</div>
+        <div class="char-tags">
+          <span class="char-tag tag-tier">${item.tier}</span>
+          <span class="char-tag tag-source">${item.source}</span>
+        </div>
+      `;
+      c.appendChild(card);
+    });
+  }
+
+  function updateHistory() {
+    const s = document.getElementById('historySection');
+    const c = document.getElementById('historyItems');
+    if (!history.length) { s.style.display='none'; return; }
+    s.style.display='block';
+    c.innerHTML = history.slice(0,30).map(h => `<span class="history-chip">${h}</span>`).join('');
+  }
+
+  function shootConfetti() {
+    const colors = ['#ff6b35','#f7971e','#ff4081','#c51162','#ffd740','#ff5252'];
+    for (let i = 0; i < 50; i++) {
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      el.style.left = Math.random()*100+'vw';
+      el.style.width = (Math.random()*10+5)+'px'; el.style.height = (Math.random()*10+5)+'px';
+      el.style.background = colors[Math.floor(Math.random()*colors.length)];
+      el.style.borderRadius = Math.random()>.5?'50%':'2px';
+      el.style.animationDuration = (Math.random()*2+1.5)+'s';
+      el.style.animationDelay = (Math.random()*.6)+'s';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+  }
+
+  document.getElementById('totalCount').textContent = btthDatabase.length;
+  updateCount();
+})();
+</script>
+</body>
+</html>

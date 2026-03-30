@@ -1,0 +1,21 @@
+{
+  "name": "btth-female-randomizer",
+  "version": "1.0.0",
+  "description": "斗破苍穹女性角色随机抽取器",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.btth.randomizer",
+    "productName": "斗破苍穹女性角色抽取器",
+    "win": { "target": "portable", "icon": null },
+    "files": ["main.js", "index.html"],
+    "portable": { "artifactName": "斗破苍穹女性角色抽取器.exe" }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}
