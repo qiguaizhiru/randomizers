@@ -309,6 +309,16 @@
     doTick();
   };
 
+  // Compress image URLs to thumbnails to avoid memory issues
+  function thumbUrl(url) {
+    if (!url) return url;
+    if (url.includes('mihoyo.com')) {
+      // Mihoyo CDN supports OSS image processing
+      return url + '?x-oss-process=image/resize,m_fill,w_256,h_256/quality,Q_80';
+    }
+    return url;
+  }
+
   function showResults(items, single) {
     const c = document.getElementById('results');
     c.innerHTML = '';
@@ -326,7 +336,7 @@
 
       card.innerHTML = `
         <div class="card-cover ${bg}">
-          ${hasImg ? `<img src="${item.img}" alt="${item.name}" onerror="this.style.display='none';this.parentElement.innerHTML+='<div style=\\'font-size:4rem;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)\\'>${eEmoji}</div>'">` : `<div>${eEmoji || '&#10024;'}</div>`}
+          ${hasImg ? `<img loading="lazy" src="${thumbUrl(item.img)}" alt="${item.name}" onerror="this.style.display='none';this.parentElement.innerHTML+='<div style=\\'font-size:4rem;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)\\'>${eEmoji}</div>'">` : `<div>${eEmoji || '&#10024;'}</div>`}
           ${item.star ? `<span class="star-badge ${starClass}">${item.star}</span>` : ''}
           ${item.element ? `<span class="element-badge ${eBadge}">${eEmoji}</span>` : ''}
         </div>
