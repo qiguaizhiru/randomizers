@@ -15,6 +15,11 @@ const tangmen2Database = [
     faction: "史莱克七怪",
     img: "https://bkimg.cdn.bcebos.com/smart/38dbb6fd5266d0160924dc72da70c30735fae6cd9f6c?x-bce-process=image/resize,m_lfit,w_536,limit_1/quality,Q_70"
   },
+  {
+    name: "西西", alias: "", role: "史莱克七怪·闪电豹武魂",
+    faction: "史莱克七怪",
+    img: ""
+  },
 
   // ── 史莱克学院 ────────────────────────────────────────────────────
   {
@@ -53,7 +58,72 @@ const tangmen2Database = [
     img: ""
   },
   {
-    name: "周漪", alias: "", role: "史莱克学院教师·霸王花",
+    name: "周漪", alias: "变态老姑婆", role: "史莱克学院教师·霸王花",
+    faction: "史莱克学院",
+    img: ""
+  },
+  {
+    name: "木槿", alias: "", role: "史莱克学院武魂系班主任",
+    faction: "史莱克学院",
+    img: ""
+  },
+  {
+    name: "宋韵芝", alias: "青影斗罗", role: "海神阁宿老·仙琳儿之母",
+    faction: "史莱克学院",
+    img: ""
+  },
+  {
+    name: "林惠群", alias: "如意斗罗", role: "海神阁宿老·聚宝阁阁主",
+    faction: "史莱克学院",
+    img: ""
+  },
+  {
+    name: "蓝素素", alias: "", role: "史莱克学院外院学员·姐妹花",
+    faction: "史莱克学院",
+    img: ""
+  },
+  {
+    name: "蓝洛洛", alias: "", role: "史莱克学院外院学员·姐妹花",
+    faction: "史莱克学院",
+    img: ""
+  },
+  {
+    name: "崔雅洁", alias: "", role: "史莱克学院外院学员·九尾狐武魂",
+    faction: "史莱克学院",
+    img: ""
+  },
+  {
+    name: "邪幻月", alias: "", role: "史莱克学院外院学员·皮皮象武魂",
+    faction: "史莱克学院",
+    img: ""
+  },
+  {
+    name: "季红染", alias: "", role: "史莱克学院外院学员·蜜蜂武魂",
+    faction: "史莱克学院",
+    img: ""
+  },
+  {
+    name: "穆笙笙", alias: "", role: "史莱克学院外院学员·暗影妖狐武魂",
+    faction: "史莱克学院",
+    img: ""
+  },
+  {
+    name: "鬼见葵", alias: "", role: "史莱克学院外院学员·鬼葵武魂",
+    faction: "史莱克学院",
+    img: ""
+  },
+  {
+    name: "赵雪鸦", alias: "", role: "史莱克学院外院学员·乌鸦武魂",
+    faction: "史莱克学院",
+    img: ""
+  },
+  {
+    name: "白色", alias: "", role: "史莱克学院内院弟子",
+    faction: "史莱克学院",
+    img: ""
+  },
+  {
+    name: "苏彤", alias: "", role: "史莱克学院内院弟子·冰属性",
     faction: "史莱克学院",
     img: ""
   },
@@ -85,7 +155,22 @@ const tangmen2Database = [
     img: "https://bkimg.cdn.bcebos.com/pic/902397dda144ad345982bdb395e81bf431adcbef2fe7?x-bce-process=image/resize,m_lfit,w_536,limit_1/quality,Q_70"
   },
   {
-    name: "南门允儿", alias: "", role: "唐门成员",
+    name: "南门允儿", alias: "", role: "唐门成员·玛瑙火鸟武魂",
+    faction: "唐门",
+    img: ""
+  },
+  {
+    name: "徐申淑", alias: "", role: "地龙门/唐门弟子·胭脂龙武魂",
+    faction: "唐门",
+    img: ""
+  },
+  {
+    name: "宋倩", alias: "", role: "地龙门/唐门弟子·胭脂龙武魂",
+    faction: "唐门",
+    img: ""
+  },
+  {
+    name: "田甜", alias: "", role: "地龙门/唐门弟子·胭脂龙武魂",
     faction: "唐门",
     img: ""
   },
@@ -131,6 +216,11 @@ const tangmen2Database = [
     faction: "星罗帝国",
     img: ""
   },
+  {
+    name: "清雅", alias: "", role: "星光拍卖场拍卖师·82级战魂斗罗",
+    faction: "星罗帝国",
+    img: ""
+  },
 
   // ── 天魂帝国 ──────────────────────────────────────────────────────
   {
@@ -159,6 +249,11 @@ const tangmen2Database = [
     name: "鸾凤", alias: "火凤斗罗", role: "火凤凰魂师团副团长",
     faction: "日月帝国",
     img: "https://bkimg.cdn.bcebos.com/pic/1c950a7b02087bf40ad19edcfc8f402c11dfa9ec61cb"
+  },
+  {
+    name: "徐天真", alias: "", role: "日月帝国皇室公主·太阳武魂",
+    faction: "日月帝国",
+    img: ""
   },
 
   // ── 圣灵教 ────────────────────────────────────────────────────────
