@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>航海王 女角色抽取器</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    background: linear-gradient(135deg, #0a0e1a 0%, #0d1b2a 40%, #0a2744 100%);
+    min-height: 100vh;
+    color: #e8d5a3;
+    padding: 20px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 26px;
+    margin-bottom: 20px;
+    color: #f5c842;
+    text-shadow: 0 0 20px rgba(245, 200, 66, 0.6);
+    letter-spacing: 3px;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  select {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(245,200,66,0.4);
+    color: #e8d5a3;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
+  }
+  select option { background: #0a0e1a; }
+
+  .btn {
+    padding: 10px 22px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+  .btn-single {
+    background: linear-gradient(135deg, #8b1a1a, #d44f2a);
+    color: #fff;
+    box-shadow: 0 0 12px rgba(212, 79, 42, 0.45);
+  }
+  .btn-five {
+    background: linear-gradient(135deg, #1a3a8b, #2a7dd4);
+    color: #fff;
+    box-shadow: 0 0 12px rgba(42, 125, 212, 0.45);
+  }
+  .btn:hover { transform: translateY(-2px); filter: brightness(1.15); }
+  .btn:active { transform: translateY(0); }
+
+  .stats {
+    text-align: center;
+    font-size: 13px;
+    color: rgba(232,213,163,0.6);
+    margin-bottom: 16px;
+  }
+
+  #result {
+    display: none;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 30px;
+  }
+  #result.show { display: flex; }
+
+  .card {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(245,200,66,0.25);
+    border-radius: 14px;
+    padding: 14px;
+    width: 180px;
+    text-align: center;
+    animation: fadeIn 0.4s ease;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+  .card:hover { transform: scale(1.03); }
+  .card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.5) 100%);
+    pointer-events: none;
+  }
+
+  .card-img-wrap {
+    width: 130px;
+    height: 170px;
+    margin: 0 auto 10px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1a2a4e, #0a2a3c);
+    position: relative;
+  }
+  .card-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+    display: block;
+  }
+  .card-img-wrap .placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 42px;
+    background: linear-gradient(135deg, #1a2a5e, #0a3a5c);
+    color: rgba(245,200,66,0.6);
+  }
+
+  .card-name {
+    font-size: 17px;
+    font-weight: bold;
+    color: #f5c842;
+    margin-bottom: 3px;
+  }
+  .card-alias {
+    font-size: 12px;
+    color: rgba(232,213,163,0.6);
+    margin-bottom: 4px;
+  }
+  .card-role {
+    font-size: 11px;
+    color: rgba(200,180,130,0.7);
+    margin-bottom: 4px;
+  }
+  .card-faction {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(245,200,66,0.12);
+    border: 1px solid rgba(245,200,66,0.3);
+    color: #f5c842;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .section-title {
+    text-align: center;
+    font-size: 16px;
+    color: rgba(245,200,66,0.7);
+    margin-bottom: 14px;
+    letter-spacing: 2px;
+  }
+
+  #all-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .mini-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(245,200,66,0.15);
+    border-radius: 10px;
+    padding: 10px 8px;
+    width: 120px;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: default;
+  }
+  .mini-card:hover {
+    border-color: rgba(245,200,66,0.5);
+    background: rgba(255,255,255,0.1);
+    transform: translateY(-2px);
+  }
+  .mini-card.dimmed { opacity: 0.3; }
+
+  .mini-img-wrap {
+    width: 80px;
+    height: 100px;
+    margin: 0 auto 6px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1a2a4e, #0a2a3c);
+  }
+  .mini-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+    display: block;
+  }
+  .mini-img-wrap .placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: rgba(245,200,66,0.5);
+  }
+
+  .mini-name { font-size: 13px; font-weight: bold; color: #f5c842; }
+  .mini-faction { font-size: 10px; color: rgba(200,180,130,0.6); margin-top: 2px; }
+
+  .confetti {
+    position: fixed;
+    top: -10px;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    animation: fall linear forwards;
+    pointer-events: none;
+    z-index: 9999;
+  }
+  @keyframes fall {
+    to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+  }
+
+  hr { border: none; border-top: 1px solid rgba(245,200,66,0.15); margin: 20px 0; }
+</style>
+</head>
+<body>
+
+<h1>☠ 航海王 女角色抽取器 ☠</h1>
+
+<div class="controls">
+  <select id="factionFilter">
+    <option value="">全部势力</option>
+    <option value="草帽海贼团">草帽海贼团</option>
+    <option value="海军">海军</option>
+    <option value="七武海">七武海</option>
+    <option value="大妈海贼团">大妈海贼团</option>
+    <option value="亚马逊百合">亚马逊百合</option>
+    <option value="阿拉巴斯坦">阿拉巴斯坦</option>
+    <option value="鱼人岛">鱼人岛</option>
+    <option value="德雷斯罗萨">德雷斯罗萨</option>
+    <option value="和之国">和之国</option>
+    <option value="革命军">革命军</option>
+    <option value="世界政府">世界政府</option>
+    <option value="超新星">超新星</option>
+    <option value="其他">其他</option>
+  </select>
+  <button class="btn btn-single" onclick="draw(1)">单抽</button>
+  <button class="btn btn-five" onclick="draw(5)">五连抽</button>
+</div>
+<div class="stats" id="stats"></div>
+
+<div id="result"></div>
+
+<hr>
+<div class="section-title">⚓ 所有女性角色 ⚓</div>
+<div id="all-grid"></div>
+
+<script src="onepiece_data.js"></script>
+<script>
+const factionColors = {
+  '草帽海贼团': '#f5c842',
+  '海军':       '#4488ff',
+  '七武海':     '#cc44ff',
+  '大妈海贼团': '#ff6688',
+  '亚马逊百合': '#ff88cc',
+  '阿拉巴斯坦': '#ffcc66',
+  '鱼人岛':     '#44ddcc',
+  '德雷斯罗萨': '#ff8844',
+  '和之国':     '#ee4444',
+  '革命军':     '#44cc88',
+  '世界政府':   '#8899ff',
+  '超新星':     '#ffaa44',
+  '其他':       '#aaaaaa',
+};
+
+function thumbUrl(url) {
+  if (!url) return '';
+  if (url.includes('bkimg.cdn.bcebos.com') && !url.includes('x-bce-process')) {
+    return url + '?x-bce-process=image/resize,m_lfit,w_260,limit_1/quality,Q_75';
+  }
+  return url;
+}
+
+function getFiltered() {
+  const faction = document.getElementById('factionFilter').value;
+  return onepieceDatabase.filter(c => !faction || c.faction === faction);
+}
+
+function buildCard(char, large = false) {
+  const img = thumbUrl(char.img);
+  const imgHtml = img
+    ? `<img src="${img}" alt="${char.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
+  const placeholder = `<div class="placeholder" style="${img ? 'display:none' : ''}">⚓</div>`;
+
+  if (large) {
+    return `<div class="card">
+      <div class="card-img-wrap">${imgHtml}${placeholder}</div>
+      <div class="card-name">${char.name}</div>
+      ${char.alias ? `<div class="card-alias">「${char.alias}」</div>` : ''}
+      <div class="card-role">${char.role}</div>
+      <span class="card-faction" style="border-color:${factionColors[char.faction] || '#aaa'}44;color:${factionColors[char.faction] || '#aaa'}">${char.faction}</span>
+    </div>`;
+  } else {
+    return `<div class="mini-card" data-faction="${char.faction}">
+      <div class="mini-img-wrap">${imgHtml}${placeholder}</div>
+      <div class="mini-name">${char.name}</div>
+      <div class="mini-faction" style="color:${factionColors[char.faction] || '#aaa'}">${char.faction}</div>
+    </div>`;
+  }
+}
+
+function draw(n) {
+  const pool = getFiltered();
+  if (!pool.length) return;
+
+  const picks = [];
+  const usedIdx = new Set();
+  for (let i = 0; i < n; i++) {
+    let idx;
+    do { idx = Math.floor(Math.random() * pool.length); }
+    while (pool.length > n && usedIdx.has(idx));
+    usedIdx.add(idx);
+    picks.push(pool[idx]);
+  }
+
+  const resultEl = document.getElementById('result');
+  resultEl.innerHTML = picks.map(c => buildCard(c, true)).join('');
+  resultEl.className = 'show';
+  resultEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  fireConfetti(n >= 5 ? 60 : 20);
+}
+
+function fireConfetti(count) {
+  const colors = ['#f5c842','#ff6688','#44ddcc','#4488ff','#ff88cc','#44cc88'];
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      el.style.cssText = `
+        left:${Math.random()*100}vw;
+        background:${colors[Math.floor(Math.random()*colors.length)]};
+        animation-duration:${1.5 + Math.random()*1.5}s;
+        width:${6 + Math.random()*6}px;
+        height:${6 + Math.random()*6}px;
+      `;
+      document.body.appendChild(el);
+      el.addEventListener('animationend', () => el.remove());
+    }, i * 40);
+  }
+}
+
+function renderAll() {
+  const faction = document.getElementById('factionFilter').value;
+  const grid = document.getElementById('all-grid');
+  grid.innerHTML = onepieceDatabase.map(c => {
+    const card = buildCard(c, false);
+    return card.replace('class="mini-card"',
+      `class="mini-card${faction && c.faction !== faction ? ' dimmed' : ''}"`);
+  }).join('');
+
+  const count = getFiltered().length;
+  document.getElementById('stats').textContent =
+    `当前池：${count} 位女性角色`;
+}
+
+document.getElementById('factionFilter').addEventListener('change', renderAll);
+renderAll();
+</script>
+</body>
+</html>
