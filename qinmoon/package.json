@@ -1,0 +1,21 @@
+{
+  "name": "qinmoon-randomizer",
+  "version": "1.0.0",
+  "description": "秦时明月角色随机抽取器",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.qinmoon.randomizer",
+    "productName": "秦时明月角色随机抽取器",
+    "win": { "target": "portable", "icon": null },
+    "files": ["main.js", "index.html"],
+    "portable": { "artifactName": "秦时明月角色随机抽取器.exe" }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}

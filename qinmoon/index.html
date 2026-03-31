@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>秦时明月角色随机抽取器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; background: #0a0810; color: #fff; overflow-x: hidden; }
+  .bg-stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse at 30% 40%, rgba(200,160,80,0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 20%, rgba(180,60,60,0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(80,120,200,0.08) 0%, transparent 50%); }
+  .star { position: absolute; border-radius: 50%; background: #fff; animation: twinkle ease-in-out infinite; }
+  @keyframes twinkle { 0%,100%{opacity:.2;transform:scale(1)} 50%{opacity:1;transform:scale(1.5)} }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 25px 20px; }
+  .header { text-align: center; margin-bottom: 22px; }
+  .header h1 { font-size: 2.5rem; font-weight: 900;
+    background: linear-gradient(135deg, #d4a853, #c0392b, #8e44ad);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; background-size: 300% 300%;
+    animation: gradShift 4s ease infinite; }
+  @keyframes gradShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  .header .sub { color: #666; margin-top: 5px; font-size: 0.82rem; }
+  .header .sub span { color: #d4a853; font-weight: 700; }
+  .filters { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px; margin-bottom: 18px; }
+  .filter-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .filter-row:last-child { margin-bottom: 0; }
+  .filter-label { font-size: 0.78rem; color: #888; min-width: 50px; padding-top: 5px; flex-shrink: 0; }
+  .filter-options { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
+  .filter-tag { padding: 3px 10px; border-radius: 12px; font-size: 0.72rem; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: #999; transition: all 0.25s; white-space: nowrap; }
+  .filter-tag:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .filter-tag.active { color: #fff; border-color: transparent; background: linear-gradient(135deg, #d4a853, #c0392b); }
+  .filter-summary { text-align: center; padding: 5px 0 0; font-size: 0.78rem; color: #666; }
+  .filter-summary span { color: #d4a853; font-weight: 700; }
+  .actions { display: flex; justify-content: center; gap: 20px; margin-bottom: 22px; flex-wrap: wrap; }
+  .draw-btn { padding: 13px 42px; font-size: 1.1rem; font-weight: 700; border: none; border-radius: 50px; cursor: pointer;
+    color: #fff; transition: all 0.3s; font-family: 'Noto Sans SC', sans-serif; position: relative; overflow: hidden; }
+  .draw-btn::before { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent); transition: left 0.5s; }
+  .draw-btn:hover::before { left: 100%; }
+  .draw-btn:hover { transform: translateY(-3px); }
+  .draw-btn:active { transform: translateY(0) scale(0.97); }
+  .draw-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+  .btn-single { background: linear-gradient(135deg, #d4a853, #b8860b); box-shadow: 0 8px 28px rgba(212,168,83,0.35); }
+  .btn-multi { background: linear-gradient(135deg, #c0392b, #8e44ad); box-shadow: 0 8px 28px rgba(192,57,43,0.35); }
+  .results { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; min-height: 180px; }
+  .result-placeholder { text-align: center; width: 100%; padding: 50px 0; color: #444; font-size: 1rem; }
+  .result-placeholder .big-icon { font-size: 3.5rem; display: block; margin-bottom: 10px; }
+  .char-card { width: 185px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; text-align: center; padding: 20px 12px;
+    animation: cardPop 0.6s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+    opacity: 0; transition: transform 0.3s, box-shadow 0.3s; cursor: default; }
+  .char-card:hover { transform: translateY(-8px); box-shadow: 0 12px 30px rgba(212,168,83,0.3); }
+  @keyframes cardPop { 0%{opacity:0;transform:scale(.3) rotateY(90deg)} 60%{transform:scale(1.05) rotateY(-5deg)} 100%{opacity:1;transform:scale(1) rotateY(0)} }
+  .char-avatar { width: 75px; height: 75px; border-radius: 50%; margin: 0 auto 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 2rem;
+    background: linear-gradient(135deg, rgba(212,168,83,0.2), rgba(192,57,43,0.2));
+    border: 2px solid rgba(212,168,83,0.3); }
+  .char-name { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; color: #d4a853; }
+  .char-desc { font-size: 0.65rem; color: #888; line-height: 1.35; margin-bottom: 6px; min-height: 2.7em;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .char-tags { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
+  .char-tag { padding: 2px 7px; border-radius: 8px; font-size: 0.58rem; font-weight: 500;
+    background: rgba(192,57,43,0.15); color: #e74c3c; border: 1px solid rgba(192,57,43,0.25); }
+  .char-card.single { width: 240px; padding: 28px 16px; }
+  .char-card.single .char-avatar { width: 95px; height: 95px; font-size: 2.5rem; }
+  .char-card.single .char-name { font-size: 1.3rem; }
+  .rolling-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 100; display: none; background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px); justify-content: center; align-items: center; flex-direction: column; }
+  .rolling-overlay.active { display: flex; }
+  .rolling-text { font-size: 2.5rem; font-weight: 900; color: #d4a853; text-align: center; padding: 0 20px; animation: pulse 0.15s ease infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.02)} }
+  .rolling-sub { color: #888; margin-top: 15px; font-size: 1rem; }
+  .history-section { margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 18px; }
+  .history-section h3 { color: #666; font-size: 0.85rem; margin-bottom: 10px; }
+  .history-items { display: flex; flex-wrap: wrap; gap: 5px; }
+  .history-chip { padding: 3px 9px; border-radius: 10px; font-size: 0.68rem; color: #888; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
+  .confetti { position: fixed; z-index: 999; pointer-events: none; animation: confDrop linear forwards; }
+  @keyframes confDrop { 0%{transform:translateY(-10vh) rotate(0) scale(1);opacity:1} 100%{transform:translateY(110vh) rotate(1080deg) scale(.5);opacity:0} }
+  @media (max-width:600px) {
+    .header h1 { font-size: 1.7rem; }
+    .draw-btn { padding: 10px 26px; font-size: 0.95rem; }
+    .char-card { width: 150px; padding: 14px 8px; }
+    .char-card.single { width: 190px; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-stars" id="bgStars"></div>
+<div class="rolling-overlay" id="rollingOverlay">
+  <div class="rolling-text" id="rollingText">...</div>
+  <div class="rolling-sub" id="rollingSub">抽取中...</div>
+</div>
+<div class="container">
+  <div class="header">
+    <h1>秦时明月角色随机抽取器</h1>
+    <p class="sub">秦时明月 + 天行九歌 全收录 | 共 <span id="totalCount">0</span> 位角色</p>
+  </div>
+  <div class="filters">
+    <div class="filter-row"><div class="filter-label">势力</div><div class="filter-options" id="fFaction"></div></div>
+    <div class="filter-summary">符合条件：<span id="filteredCount">0</span> 位角色</div>
+  </div>
+  <div class="actions">
+    <button class="draw-btn btn-single" id="btnSingle" onclick="draw(1)">单抽</button>
+    <button class="draw-btn btn-multi" id="btnMulti" onclick="draw(5)">五连抽</button>
+  </div>
+  <div class="results" id="results">
+    <div class="result-placeholder"><span class="big-icon">&#9876;</span>选择筛选条件，然后点击抽取吧！</div>
+  </div>
+  <div class="history-section" id="historySection" style="display:none;">
+    <h3>抽取历史</h3>
+    <div class="history-items" id="historyItems"></div>
+  </div>
+</div>
+<script>
+const database = [
+  // 墨家
+  {name:"荆天明",faction:"墨家",desc:"荆轲之子，后继任墨家巨子"},
+  {name:"高月",faction:"墨家",desc:"燕太子丹之女，精通药理"},
+  {name:"端木蓉",faction:"墨家",desc:"墨家医仙，盖聂红颜知己"},
+  {name:"高渐离",faction:"墨家",desc:"墨家统领，擅奏筑，雪女恋人"},
+  {name:"雪女",faction:"墨家",desc:"赵国人，燕国最秀美歌舞伎"},
+  {name:"班大师",faction:"墨家",desc:"墨家统领，非攻机关术传人"},
+  {name:"徐夫子",faction:"墨家",desc:"墨家统领，传奇铸剑师"},
+  {name:"盗跖",faction:"墨家",desc:"墨家统领，天下第一神偷"},
+  {name:"大铁锤",faction:"墨家",desc:"墨家统领，原燕国军官"},
+  {name:"庖丁",faction:"墨家",desc:"墨家统领，擅解牛刀法"},
+  {name:"荆轲",faction:"墨家",desc:"天明之父，以刺秦闻名"},
+  {name:"丽姬",faction:"墨家",desc:"荆轲之妻，天明之母"},
+  {name:"燕太子丹",faction:"墨家",desc:"前任墨家巨子，高月之父"},
+  {name:"六指黑侠",faction:"墨家",desc:"更早期墨家巨子"},
+
+  // 儒家
+  {name:"荀子",faction:"儒家",desc:"儒家宗师，韩非与李斯的老师"},
+  {name:"伏念",faction:"儒家",desc:"小圣贤庄掌门，齐鲁三杰之首"},
+  {name:"颜路",faction:"儒家",desc:"儒家二当家，擅坐忘心法"},
+  {name:"张良",faction:"儒家",desc:"齐鲁三杰之三，韩国相国之孙"},
+  {name:"子聪",faction:"儒家",desc:"儒家弟子，能言善辩"},
+  {name:"子慕",faction:"儒家",desc:"儒家弟子，争强好胜"},
+
+  // 道家天宗
+  {name:"赤松子",faction:"道家·天宗",desc:"天宗前任掌门，持雪霁剑"},
+  {name:"晓梦",faction:"道家·天宗",desc:"天宗现任掌门，年少即悟道"},
+  {name:"北冥子",faction:"道家·天宗",desc:"晓梦师父"},
+  {name:"小灵",faction:"道家·天宗",desc:"天宗弟子，潜入阴阳家当间谍"},
+
+  // 道家人宗
+  {name:"逍遥子",faction:"道家·人宗",desc:"人宗掌门，协助诸子百家反秦"},
+  {name:"木虚子",faction:"道家·人宗",desc:"人宗长老，叛徒"},
+
+  // 法家
+  {name:"韩非",faction:"法家",desc:"法家集大成者，韩王安第九子"},
+  {name:"李斯",faction:"法家",desc:"韩非同门师弟，秦国丞相"},
+
+  // 阴阳家
+  {name:"东皇太一",faction:"阴阳家",desc:"阴阳家首领，神秘蒙面人"},
+  {name:"月神",faction:"阴阳家",desc:"右护法，精通占星预言"},
+  {name:"星魂",faction:"阴阳家",desc:"左护法，少年天才"},
+  {name:"焱妃",faction:"阴阳家",desc:"原燕国太子妃，高月生母"},
+  {name:"云中君",faction:"阴阳家",desc:"五大长老之首(金部)，炼丹术士"},
+  {name:"大司命",faction:"阴阳家",desc:"五大长老(火部)，毒术高手"},
+  {name:"少司命",faction:"阴阳家",desc:"五大长老(木部)，擅控植物"},
+  {name:"湘君",faction:"阴阳家",desc:"五大长老(土部)"},
+  {name:"湘夫人",faction:"阴阳家",desc:"五大长老(水部)，湘君之妻"},
+  {name:"楚南公",faction:"阴阳家",desc:"楚国贵族，占卜师"},
+
+  // 农家
+  {name:"田光",faction:"农家",desc:"农家侠魁，燕国爱国志士"},
+  {name:"朱家",faction:"农家",desc:"神农堂堂主，擅千人千面"},
+  {name:"典庆",faction:"农家",desc:"神农堂高手，铜头铁臂"},
+  {name:"花影",faction:"农家",desc:"神农堂弟子，醉梦楼歌姬"},
+  {name:"刘邦",faction:"农家",desc:"神农堂弟子，未来汉朝开国皇帝"},
+  {name:"田猛",faction:"农家",desc:"烈山堂堂主，被暗杀"},
+  {name:"田言",faction:"农家",desc:"烈山堂新堂主，实为罗网惊鲵"},
+  {name:"田赐",faction:"农家",desc:"烈山堂双刀高手"},
+  {name:"哑奴",faction:"农家",desc:"烈山堂成员，前刺客"},
+  {name:"田虎",faction:"农家",desc:"蚩尤堂堂主，田猛之弟"},
+  {name:"骨妖",faction:"农家",desc:"蚩尤堂高手，身体无骨般柔软"},
+  {name:"田仲",faction:"农家",desc:"共工堂堂主"},
+  {name:"田蜜",faction:"农家",desc:"魁隗堂堂主"},
+  {name:"司徒万里",faction:"农家",desc:"四岳堂堂主，经营赌坊"},
+  {name:"梅三娘",faction:"农家",desc:"四岳堂披甲门，擅铁布衫"},
+
+  // 纵横家
+  {name:"鬼谷子",faction:"纵横家",desc:"纵横家创始人，盖聂与卫庄师父"},
+  {name:"盖聂",faction:"纵横家",desc:"剑圣，天明守护者，持渊虹剑"},
+  {name:"卫庄",faction:"纵横家",desc:"横剑术传人，流沙首领"},
+
+  // 流沙
+  {name:"紫女",faction:"流沙",desc:"紫兰轩主人，流沙元老，美艳智慧"},
+  {name:"赤练",faction:"流沙",desc:"韩国公主，毒术高手，韩非之妹"},
+  {name:"白凤凰",faction:"流沙",desc:"流沙四天王之首，可飞行"},
+  {name:"无双",faction:"流沙",desc:"无双鬼，力大无穷"},
+  {name:"苍狼王",faction:"流沙",desc:"狼面刺客，能驱使群狼"},
+  {name:"隐蝠",faction:"流沙",desc:"擅蝙蝠血术，半人半蝠"},
+  {name:"黑麒麟",faction:"流沙",desc:"易容大师，天下第一杀手"},
+  {name:"焰灵姬",faction:"流沙",desc:"百越族人，操控火焰，红衣妖艳"},
+  {name:"弄玉",faction:"流沙",desc:"紫兰轩头牌琴姬"},
+
+  // 罗网
+  {name:"赵高",faction:"罗网",desc:"罗网总领，后为秦国丞相"},
+  {name:"掩日",faction:"罗网",desc:"天字一等杀手，身份神秘"},
+  {name:"惊鲵",faction:"罗网",desc:"天字一等，潜入农家的间谍"},
+  {name:"玄翦",faction:"罗网",desc:"黑白玄翦，天字一等"},
+  {name:"胜七",faction:"罗网",desc:"黑剑士，持巨阙剑"},
+  {name:"真刚",faction:"罗网",desc:"六剑奴之首"},
+  {name:"断水",faction:"罗网",desc:"六剑奴，蒙眼老者"},
+  {name:"乱神",faction:"罗网",desc:"六剑奴，癫狂残忍"},
+  {name:"魍魉",faction:"罗网",desc:"六剑奴，双剑少年"},
+  {name:"转魄",faction:"罗网",desc:"六剑奴，孪生姐妹之一"},
+  {name:"灭魂",faction:"罗网",desc:"六剑奴，孪生姐妹之二"},
+
+  // 秦国
+  {name:"嬴政",faction:"秦国",desc:"大秦始皇帝，持天问剑"},
+  {name:"扶苏",faction:"秦国",desc:"秦始皇长子，性格仁厚"},
+  {name:"胡亥",faction:"秦国",desc:"秦始皇幼子，与赵高关系密切"},
+  {name:"蒙恬",faction:"秦国",desc:"少年将军，黄金火骑军统帅"},
+  {name:"章邯",faction:"秦国",desc:"秦国将军，影密卫首领"},
+  {name:"王翦",faction:"秦国",desc:"秦国名将，灭五国统帅"},
+  {name:"吕不韦",faction:"秦国",desc:"秦国前相国"},
+
+  // 楚国
+  {name:"项少羽",faction:"楚国",desc:"楚国项氏少主，未来西楚霸王"},
+  {name:"虞姬",faction:"楚国",desc:"蜀山公主，项羽恋人"},
+  {name:"项梁",faction:"楚国",desc:"项羽叔父，楚国将领"},
+  {name:"项燕",faction:"楚国",desc:"项羽祖父，楚国大将"},
+  {name:"范增",faction:"楚国",desc:"项氏军师，项羽亚父"},
+  {name:"龙且",faction:"楚国",desc:"项羽义弟，风林火山火将"},
+  {name:"钟离眛",faction:"楚国",desc:"风林火山风将，箭术高手"},
+  {name:"英布",faction:"楚国",desc:"风林火山林将"},
+  {name:"季布",faction:"楚国",desc:"风林火山山将，一诺千金"},
+  {name:"涟衣",faction:"楚国",desc:"楚国公主，醉梦楼歌姬"},
+  {name:"春申君",faction:"楚国",desc:"楚国权臣(天行九歌)"},
+
+  // 韩国
+  {name:"韩王安",faction:"韩国",desc:"韩国末代国王"},
+  {name:"姬无夜",faction:"韩国",desc:"韩国大将军，夜幕首领"},
+  {name:"白亦非",faction:"韩国",desc:"夜幕四凶将之首，血衣侯"},
+  {name:"翡翠虎",faction:"韩国",desc:"夜幕四凶将之二，韩国巨商"},
+  {name:"明珠夫人",faction:"韩国",desc:"夜幕四凶将之三，韩王宠妃"},
+  {name:"蓑衣客",faction:"韩国",desc:"夜幕四凶将之四，掌谍报"},
+  {name:"墨鸦",faction:"韩国",desc:"夜幕百鸟第一高手"},
+  {name:"鹦歌",faction:"韩国",desc:"夜幕百鸟女性首领"},
+  {name:"张开地",faction:"韩国",desc:"韩国相国，张良祖父"},
+
+  // 燕国
+  {name:"雁春君",faction:"燕国",desc:"燕国贵族，燕王之弟"},
+
+  // 赵国
+  {name:"李牧",faction:"赵国",desc:"赵国名将，军阵之神"},
+
+  // 其他
+  {name:"名家·公孙玲珑",faction:"名家",desc:"公孙龙后人，善辩论"},
+  {name:"兵家·韩信",faction:"兵家",desc:"布衣战略家，持潜蛟剑"},
+  {name:"医家·念端",faction:"医家",desc:"端木蓉师父，银针医术大师"},
+  {name:"公输仇",faction:"公输家",desc:"鲁班后裔，霸道机关术传人"},
+  {name:"虞子期",faction:"蜀山",desc:"蜀山高手，虞姬之兄"},
+  {name:"头曼",faction:"匈奴",desc:"匈奴单于"},
+  {name:"胡姬",faction:"匈奴",desc:"单于宠妃，异色双瞳"},
+  {name:"诺敏",faction:"匈奴",desc:"狼族女刺客"},
+  {name:"孟姜",faction:"其他",desc:"难民医者，救助过钟离眛"},
+];
+
+(function() {
+  let filters = { faction: '全部' };
+  let history = [];
+  let isRolling = false;
+
+  const factions = [...new Set(database.map(c => c.faction))];
+  const factionOpts = ['全部', ...factions];
+
+  const emojis = ['&#9876;','&#128293;','&#127774;','&#10024;','&#9733;','&#128142;','&#127775;','&#128171;'];
+
+  const sc = document.getElementById('bgStars');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div'); s.className = 'star';
+    s.style.left = Math.random()*100+'%'; s.style.top = Math.random()*100+'%';
+    const sz = Math.random()*2+1; s.style.width=sz+'px'; s.style.height=sz+'px';
+    s.style.animationDuration = (Math.random()*3+2)+'s'; s.style.animationDelay = (Math.random()*3)+'s';
+    sc.appendChild(s);
+  }
+
+  const el = document.getElementById('fFaction');
+  factionOpts.forEach(opt => {
+    const t = document.createElement('span');
+    t.className = 'filter-tag' + (opt==='全部'?' active':'');
+    t.textContent = opt;
+    t.onclick = () => {
+      el.querySelectorAll('.filter-tag').forEach(x => x.classList.remove('active'));
+      t.classList.add('active'); filters.faction = opt; updateCount();
+    };
+    el.appendChild(t);
+  });
+
+  function getFiltered() {
+    return database.filter(c => filters.faction === '全部' || c.faction === filters.faction);
+  }
+
+  function updateCount() {
+    const n = getFiltered().length;
+    document.getElementById('filteredCount').textContent = n;
+    document.getElementById('btnSingle').disabled = n === 0;
+    document.getElementById('btnMulti').disabled = n < 1;
+  }
+
+  window.draw = function(count) {
+    if (isRolling) return;
+    const pool = getFiltered(); if (!pool.length) return;
+    isRolling = true;
+    const ov = document.getElementById('rollingOverlay');
+    const rt = document.getElementById('rollingText');
+    document.getElementById('rollingSub').textContent = count===1?'单抽中...':'五连抽中...';
+    ov.classList.add('active');
+    let tick = 0;
+    function doTick() {
+      rt.textContent = pool[Math.floor(Math.random()*pool.length)].name;
+      tick++;
+      if (tick < 25) setTimeout(doTick, 40 + tick*tick*1.5);
+      else setTimeout(() => {
+        ov.classList.remove('active'); isRolling = false;
+        const picked = [], used = new Set();
+        for (let i = 0; i < count; i++) {
+          let t = 0, item;
+          do { item = pool[Math.floor(Math.random()*pool.length)]; t++; }
+          while (used.has(item.name) && t < 100 && pool.length > count);
+          used.add(item.name); picked.push(item);
+        }
+        showResults(picked, count===1);
+        picked.forEach(p => history.unshift(p.name));
+        updateHistory(); shootConfetti();
+      }, 300);
+    }
+    doTick();
+  };
+
+  function showResults(items, single) {
+    const c = document.getElementById('results'); c.innerHTML = '';
+    items.forEach((item, i) => {
+      const card = document.createElement('div');
+      card.className = 'char-card' + (single?' single':'');
+      card.style.animationDelay = (i*0.12)+'s';
+      card.innerHTML = `
+        <div class="char-avatar">${emojis[Math.floor(Math.random()*emojis.length)]}</div>
+        <div class="char-name">${item.name}</div>
+        <div class="char-desc">${item.desc}</div>
+        <div class="char-tags"><span class="char-tag">${item.faction}</span></div>
+      `;
+      c.appendChild(card);
+    });
+  }
+
+  function updateHistory() {
+    const s = document.getElementById('historySection');
+    const c = document.getElementById('historyItems');
+    if (!history.length) { s.style.display='none'; return; }
+    s.style.display='block';
+    c.innerHTML = history.slice(0,30).map(h => `<span class="history-chip">${h}</span>`).join('');
+  }
+
+  function shootConfetti() {
+    const colors = ['#d4a853','#c0392b','#8e44ad','#e74c3c','#f1c40f','#2ecc71'];
+    for (let i = 0; i < 50; i++) {
+      const el = document.createElement('div'); el.className = 'confetti';
+      el.style.left = Math.random()*100+'vw';
+      el.style.width = (Math.random()*10+5)+'px'; el.style.height = (Math.random()*10+5)+'px';
+      el.style.background = colors[Math.floor(Math.random()*colors.length)];
+      el.style.borderRadius = Math.random()>.5?'50%':'2px';
+      el.style.animationDuration = (Math.random()*2+1.5)+'s';
+      el.style.animationDelay = (Math.random()*.6)+'s';
+      document.body.appendChild(el); setTimeout(() => el.remove(), 4000);
+    }
+  }
+
+  document.getElementById('totalCount').textContent = database.length;
+  updateCount();
+})();
+</script>
+</body>
+</html>
