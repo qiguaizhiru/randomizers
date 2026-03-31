@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>火影忍者角色随机抽取器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; background: #0a0810; color: #fff; overflow-x: hidden; }
+  .bg-stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse at 30% 40%, rgba(255,120,0,0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 20%, rgba(255,50,50,0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(50,100,200,0.08) 0%, transparent 50%); }
+  .star { position: absolute; border-radius: 50%; background: #fff; animation: twinkle ease-in-out infinite; }
+  @keyframes twinkle { 0%,100%{opacity:.2;transform:scale(1)} 50%{opacity:1;transform:scale(1.5)} }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 22px 20px; }
+  .header { text-align: center; margin-bottom: 20px; }
+  .header h1 { font-size: 2.5rem; font-weight: 900;
+    background: linear-gradient(135deg, #ff6a00, #ee0979, #ff6a00);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; background-size: 300% 300%;
+    animation: gradShift 4s ease infinite; }
+  @keyframes gradShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  .header .sub { color: #666; margin-top: 4px; font-size: 0.82rem; }
+  .header .sub span { color: #ff6a00; font-weight: 700; }
+  .filters { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 14px; margin-bottom: 16px; }
+  .filter-row { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+  .filter-row:last-child { margin-bottom: 0; }
+  .filter-label { font-size: 0.75rem; color: #888; min-width: 40px; padding-top: 4px; flex-shrink: 0; }
+  .filter-options { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
+  .filter-tag { padding: 3px 9px; border-radius: 11px; font-size: 0.68rem; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: #999; transition: all 0.25s; white-space: nowrap; }
+  .filter-tag:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .filter-tag.active { color: #fff; border-color: transparent; background: linear-gradient(135deg, #ff6a00, #ee0979); }
+  .filter-summary { text-align: center; padding: 4px 0 0; font-size: 0.75rem; color: #666; }
+  .filter-summary span { color: #ff6a00; font-weight: 700; }
+  .actions { display: flex; justify-content: center; gap: 18px; margin-bottom: 20px; flex-wrap: wrap; }
+  .draw-btn { padding: 12px 40px; font-size: 1.1rem; font-weight: 700; border: none; border-radius: 50px; cursor: pointer;
+    color: #fff; transition: all 0.3s; font-family: 'Noto Sans SC', sans-serif; position: relative; overflow: hidden; }
+  .draw-btn::before { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent); transition: left 0.5s; }
+  .draw-btn:hover::before { left: 100%; }
+  .draw-btn:hover { transform: translateY(-3px); }
+  .draw-btn:active { transform: translateY(0) scale(0.97); }
+  .draw-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+  .btn-single { background: linear-gradient(135deg, #ff6a00, #ee0979); box-shadow: 0 8px 28px rgba(255,106,0,0.35); }
+  .btn-multi { background: linear-gradient(135deg, #2196f3, #00bcd4); box-shadow: 0 8px 28px rgba(33,150,243,0.35); }
+  .results { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; min-height: 180px; }
+  .result-placeholder { text-align: center; width: 100%; padding: 50px 0; color: #444; font-size: 1rem; }
+  .result-placeholder .big-icon { font-size: 3.5rem; display: block; margin-bottom: 10px; }
+  .char-card { width: 175px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; overflow: hidden;
+    animation: cardPop 0.6s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+    opacity: 0; transition: transform 0.3s, box-shadow 0.3s; cursor: default; }
+  .char-card:hover { transform: translateY(-8px); box-shadow: 0 12px 30px rgba(255,106,0,0.25); }
+  @keyframes cardPop { 0%{opacity:0;transform:scale(.3) rotateY(90deg)} 60%{transform:scale(1.05) rotateY(-5deg)} 100%{opacity:1;transform:scale(1) rotateY(0)} }
+  .card-cover { width: 100%; height: 190px; position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; font-size: 3.5rem;
+    background: linear-gradient(135deg, #1a0a00, #0a1020); }
+  .card-cover img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
+  .char-card:hover .card-cover img { transform: scale(1.08); }
+  .card-cover .village-badge { position: absolute; top: 5px; right: 5px; padding: 2px 7px; border-radius: 8px;
+    font-size: 0.55rem; font-weight: 600; backdrop-filter: blur(8px); background: rgba(255,106,0,0.7); color: #fff; }
+  .card-info { padding: 9px 10px; }
+  .card-name { font-size: 0.88rem; font-weight: 700; text-align: center; margin-bottom: 4px; }
+  .card-clan { font-size: 0.6rem; color: #888; text-align: center; }
+  .char-card.single { width: 250px; }
+  .char-card.single .card-cover { height: 280px; }
+  .char-card.single .card-name { font-size: 1.2rem; }
+  .rolling-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 100; display: none; background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px); justify-content: center; align-items: center; flex-direction: column; }
+  .rolling-overlay.active { display: flex; }
+  .rolling-text { font-size: 2.5rem; font-weight: 900; color: #ff6a00; text-align: center; padding: 0 20px; animation: pulse 0.15s ease infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.02)} }
+  .rolling-sub { color: #888; margin-top: 15px; font-size: 1rem; }
+  .history-section { margin-top: 28px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px; }
+  .history-section h3 { color: #666; font-size: 0.85rem; margin-bottom: 10px; }
+  .history-items { display: flex; flex-wrap: wrap; gap: 5px; }
+  .history-chip { padding: 3px 8px; border-radius: 9px; font-size: 0.65rem; color: #888; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
+  .confetti { position: fixed; z-index: 999; pointer-events: none; animation: confDrop linear forwards; }
+  @keyframes confDrop { 0%{transform:translateY(-10vh) rotate(0) scale(1);opacity:1} 100%{transform:translateY(110vh) rotate(1080deg) scale(.5);opacity:0} }
+  @media (max-width:600px) {
+    .header h1 { font-size: 1.7rem; }
+    .draw-btn { padding: 10px 26px; font-size: 0.95rem; }
+    .char-card { width: 145px; }
+    .char-card .card-cover { height: 160px; }
+    .char-card.single { width: 190px; }
+    .char-card.single .card-cover { height: 240px; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-stars" id="bgStars"></div>
+<div class="rolling-overlay" id="rollingOverlay">
+  <div class="rolling-text" id="rollingText">...</div>
+  <div class="rolling-sub" id="rollingSub">抽取中...</div>
+</div>
+<div class="container">
+  <div class="header">
+    <h1>火影忍者角色随机抽取器</h1>
+    <p class="sub">全系列收录 | 共 <span id="totalCount">0</span> 位角色</p>
+  </div>
+  <div class="filters">
+    <div class="filter-row"><div class="filter-label">势力</div><div class="filter-options" id="fVillage"></div></div>
+    <div class="filter-summary">符合条件：<span id="filteredCount">0</span> 位角色</div>
+  </div>
+  <div class="actions">
+    <button class="draw-btn btn-single" id="btnSingle" onclick="draw(1)">单抽</button>
+    <button class="draw-btn btn-multi" id="btnMulti" onclick="draw(5)">五连抽</button>
+  </div>
+  <div class="results" id="results">
+    <div class="result-placeholder"><span class="big-icon">&#127744;</span>选择筛选条件，然后点击抽取吧！</div>
+  </div>
+  <div class="history-section" id="historySection" style="display:none;">
+    <h3>抽取历史</h3>
+    <div class="history-items" id="historyItems"></div>
+  </div>
+</div>
+<script src="naruto_data.js"></script>
+<script>
+(function() {
+  let filters = { village: '全部' };
+  let history = [];
+  let isRolling = false;
+
+  // Build village options from data, sorted by count, top 20 + others
+  const villageCounts = {};
+  narutoDatabase.forEach(c => { villageCounts[c.village] = (villageCounts[c.village] || 0) + 1; });
+  const topVillages = Object.entries(villageCounts).sort((a,b) => b[1]-a[1]).slice(0, 20).map(e => e[0]);
+  const villageOpts = ['全部', ...topVillages];
+
+  const sc = document.getElementById('bgStars');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div'); s.className = 'star';
+    s.style.left = Math.random()*100+'%'; s.style.top = Math.random()*100+'%';
+    const sz = Math.random()*2+1; s.style.width=sz+'px'; s.style.height=sz+'px';
+    s.style.animationDuration = (Math.random()*3+2)+'s'; s.style.animationDelay = (Math.random()*3)+'s';
+    sc.appendChild(s);
+  }
+
+  const el = document.getElementById('fVillage');
+  villageOpts.forEach(opt => {
+    const t = document.createElement('span');
+    t.className = 'filter-tag' + (opt==='全部'?' active':'');
+    t.textContent = opt;
+    t.onclick = () => {
+      el.querySelectorAll('.filter-tag').forEach(x => x.classList.remove('active'));
+      t.classList.add('active'); filters.village = opt; updateCount();
+    };
+    el.appendChild(t);
+  });
+
+  function getFiltered() {
+    return narutoDatabase.filter(c => filters.village === '全部' || c.village === filters.village);
+  }
+
+  function updateCount() {
+    const n = getFiltered().length;
+    document.getElementById('filteredCount').textContent = n;
+    document.getElementById('btnSingle').disabled = n === 0;
+    document.getElementById('btnMulti').disabled = n < 1;
+  }
+
+  window.draw = function(count) {
+    if (isRolling) return;
+    const pool = getFiltered(); if (!pool.length) return;
+    isRolling = true;
+    const ov = document.getElementById('rollingOverlay');
+    const rt = document.getElementById('rollingText');
+    document.getElementById('rollingSub').textContent = count===1?'单抽中...':'五连抽中...';
+    ov.classList.add('active');
+    let tick = 0;
+    function doTick() {
+      rt.textContent = pool[Math.floor(Math.random()*pool.length)].name;
+      tick++;
+      if (tick < 25) setTimeout(doTick, 40 + tick*tick*1.5);
+      else setTimeout(() => {
+        ov.classList.remove('active'); isRolling = false;
+        const picked = [], used = new Set();
+        for (let i = 0; i < count; i++) {
+          let t = 0, item;
+          do { item = pool[Math.floor(Math.random()*pool.length)]; t++; }
+          while (used.has(item.name) && t < 100 && pool.length > count);
+          used.add(item.name); picked.push(item);
+        }
+        showResults(picked, count===1);
+        picked.forEach(p => history.unshift(p.name));
+        updateHistory(); shootConfetti();
+      }, 300);
+    }
+    doTick();
+  };
+
+  function thumbUrl(url) {
+    if (!url) return '';
+    // Wikia images: add /revision/latest/scale-to-width-down/256
+    if (url.includes('static.wikia.nocookie.net')) {
+      return url + '/revision/latest/scale-to-width-down/256';
+    }
+    return url;
+  }
+
+  function showResults(items, single) {
+    const c = document.getElementById('results'); c.innerHTML = '';
+    items.forEach((item, i) => {
+      const card = document.createElement('div');
+      card.className = 'char-card' + (single?' single':'');
+      card.style.animationDelay = (i*0.12)+'s';
+      const hasImg = item.img && item.img.startsWith('http');
+
+      card.innerHTML = `
+        <div class="card-cover">
+          ${hasImg ? `<img loading="lazy" src="${thumbUrl(item.img)}" alt="${item.name}" onerror="this.style.display='none'">` : '&#127744;'}
+          <span class="village-badge">${item.village}</span>
+        </div>
+        <div class="card-info">
+          <div class="card-name">${item.name}</div>
+          ${item.clan ? `<div class="card-clan">${item.clan}</div>` : ''}
+        </div>
+      `;
+      c.appendChild(card);
+    });
+  }
+
+  function updateHistory() {
+    const s = document.getElementById('historySection');
+    const c = document.getElementById('historyItems');
+    if (!history.length) { s.style.display='none'; return; }
+    s.style.display='block';
+    c.innerHTML = history.slice(0,30).map(h => `<span class="history-chip">${h}</span>`).join('');
+  }
+
+  function shootConfetti() {
+    const colors = ['#ff6a00','#ee0979','#2196f3','#ff5722','#ffc107','#4caf50'];
+    for (let i = 0; i < 50; i++) {
+      const el = document.createElement('div'); el.className = 'confetti';
+      el.style.left = Math.random()*100+'vw';
+      el.style.width = (Math.random()*10+5)+'px'; el.style.height = (Math.random()*10+5)+'px';
+      el.style.background = colors[Math.floor(Math.random()*colors.length)];
+      el.style.borderRadius = Math.random()>.5?'50%':'2px';
+      el.style.animationDuration = (Math.random()*2+1.5)+'s';
+      el.style.animationDelay = (Math.random()*.6)+'s';
+      document.body.appendChild(el); setTimeout(() => el.remove(), 4000);
+    }
+  }
+
+  document.getElementById('totalCount').textContent = narutoDatabase.length;
+  updateCount();
+})();
+</script>
+</body>
+</html>

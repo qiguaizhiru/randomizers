@@ -1,0 +1,21 @@
+{
+  "name": "naruto-randomizer",
+  "version": "1.0.0",
+  "description": "火影忍者角色随机抽取器",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.naruto.randomizer",
+    "productName": "火影忍者角色随机抽取器",
+    "win": { "target": "portable", "icon": null },
+    "files": ["main.js", "index.html", "naruto_data.js"],
+    "portable": { "artifactName": "火影忍者角色随机抽取器.exe" }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}
