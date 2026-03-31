@@ -16,6 +16,48 @@ const tangmen2Database = [
     img: "https://bkimg.cdn.bcebos.com/smart/38dbb6fd5266d0160924dc72da70c30735fae6cd9f6c?x-bce-process=image/resize,m_lfit,w_536,limit_1/quality,Q_70"
   },
 
+  // ── 史莱克学院 ────────────────────────────────────────────────────
+  {
+    name: "马小桃", alias: "火焰狂魔", role: "火凤凰·内院学生",
+    faction: "史莱克学院",
+    img: "https://bkimg.cdn.bcebos.com/pic/d1160924ab18972bd407f1f3e5946c899e510fb39ccb"
+  },
+  {
+    name: "张乐萱", alias: "月斗罗", role: "内院首席·海神阁阁员",
+    faction: "史莱克学院",
+    img: "https://bkimg.cdn.bcebos.com/smart/d8f9d72a6059252dd42a1ded37c2143b5bb5c8ea139b-bkimg-process,v_1,rw_1356,rh_883,maxl_436?x-bce-process=image/format,f_auto"
+  },
+  {
+    name: "仙琳儿", alias: "武神斗罗", role: "魂导系院长",
+    faction: "史莱克学院",
+    img: "https://bkimg.cdn.bcebos.com/pic/5fdf8db1cb1349540923c7163b128558d109b3dedc37"
+  },
+  {
+    name: "蔡媚儿", alias: "", role: "武魂系副院长",
+    faction: "史莱克学院",
+    img: "https://bkimg.cdn.bcebos.com/pic/f31fbe096b63f6246b60fadcbf1ffcf81a4c500f05e2?x-bce-process=image/resize,m_lfit,w_536,limit_1/quality,Q_70"
+  },
+  {
+    name: "寒若若", alias: "金仙", role: "内院第一控制系",
+    faction: "史莱克学院",
+    img: "https://bkimg.cdn.bcebos.com/pic/a9d3fd1f4134970a304e37861f93c6c8a786c917f75b"
+  },
+  {
+    name: "凌落宸", alias: "雪公主", role: "内院·冰系控制",
+    faction: "史莱克学院",
+    img: "https://bkimg.cdn.bcebos.com/pic/a2cc7cd98d1001e939010ffa8c556cec54e737d13989"
+  },
+  {
+    name: "伍茗", alias: "金乌圣女", role: "内院元老弟子·金乌武魂",
+    faction: "史莱克学院",
+    img: ""
+  },
+  {
+    name: "周漪", alias: "", role: "史莱克学院教师·霸王花",
+    faction: "史莱克学院",
+    img: ""
+  },
+
   // ── 唐门 ──────────────────────────────────────────────────────────
   {
     name: "唐雅", alias: "蓝银圣女", role: "唐门门主",
@@ -43,23 +85,6 @@ const tangmen2Database = [
     img: ""
   },
 
-  // ── 史莱克学院 ────────────────────────────────────────────────────
-  {
-    name: "马小桃", alias: "火焰狂魔", role: "火凤凰·内院学生",
-    faction: "史莱克学院",
-    img: "https://bkimg.cdn.bcebos.com/pic/d1160924ab18972bd407f1f3e5946c899e510fb39ccb"
-  },
-  {
-    name: "张乐萱", alias: "月斗罗", role: "内院首席·海神阁阁员",
-    faction: "史莱克学院",
-    img: "https://bkimg.cdn.bcebos.com/smart/d8f9d72a6059252dd42a1ded37c2143b5bb5c8ea139b-bkimg-process,v_1,rw_1356,rh_883,maxl_436?x-bce-process=image/format,f_auto"
-  },
-  {
-    name: "周漪", alias: "", role: "史莱克学院教师",
-    faction: "史莱克学院",
-    img: ""
-  },
-
   // ── 星罗帝国 ──────────────────────────────────────────────────────
   {
     name: "王秋儿", alias: "帝皇瑞兽", role: "金龙矛·三眼金狮化身",
@@ -74,7 +99,24 @@ const tangmen2Database = [
   {
     name: "朱露", alias: "", role: "朱家·武魂系核心弟子",
     faction: "星罗帝国",
-    img: ""
+    img: "https://bkimg.cdn.bcebos.com/pic/a6efce1b9d16fdfaaf5177c146d79b5494eef01fcdd1"
+  },
+  {
+    name: "许久久", alias: "星罗公主", role: "皇室公主·学院队队长",
+    faction: "星罗帝国",
+    img: "https://bkimg.cdn.bcebos.com/pic/9f510fb30f2442a7d933e7637119ba4bd11372f0a4f9?x-bce-process=image/resize,m_lfit,w_536,limit_1/quality,Q_70"
+  },
+  {
+    name: "许云", alias: "小公主", role: "星罗小公主·戴路力之妻",
+    faction: "星罗帝国",
+    img: "https://bkimg.cdn.bcebos.com/pic/472309f790529822720ed7429d906ccb0a46f31f7ea5"
+  },
+
+  // ── 天魂帝国 ──────────────────────────────────────────────────────
+  {
+    name: "维娜", alias: "", role: "天魂帝国公主",
+    faction: "天魂帝国",
+    img: "https://bkimg.cdn.bcebos.com/pic/3801213fb80e7bec54e76b1f2677ae389b504ec23d8e"
   },
 
   // ── 日月帝国 ──────────────────────────────────────────────────────
@@ -101,6 +143,13 @@ const tangmen2Database = [
     img: "https://bkimg.cdn.bcebos.com/smart/37d3d539b6003af33a87ec9e0b73d15c10385243188e-bkimg-process,v_1,rw_16,rh_9,maxl_504"
   },
 
+  // ── 地龙门 ────────────────────────────────────────────────────────
+  {
+    name: "南水水", alias: "", role: "地龙门门主·南秋秋之母",
+    faction: "地龙门",
+    img: "https://bkimg.cdn.bcebos.com/pic/3812b31bb051f8198618f5d7f5ed5ded2e738ad449ae?x-bce-process=image/resize,m_lfit,w_536,limit_1/quality,Q_70"
+  },
+
   // ── 神灵 / 精神体 ─────────────────────────────────────────────────
   {
     name: "雪帝", alias: "极北三天王首领", role: "雪皇·霍雨浩魂灵",
@@ -112,15 +161,15 @@ const tangmen2Database = [
     faction: "神灵",
     img: "https://bkimg.cdn.bcebos.com/pic/4b90f603738da97739127576980aef198618367a4560?x-bce-process=image/resize,m_lfit,w_536,limit_1/quality,Q_70"
   },
-  {
-    name: "天梦冰蚕", alias: "极北三天王", role: "天梦·霍雨浩精神守护",
-    faction: "神灵",
-    img: "https://bkimg.cdn.bcebos.com/pic/3c6d55fbb2fb43166d22cacbb9ee512309f790527565"
-  },
 
-  // ── 其他 ──────────────────────────────────────────────────────────
+  // ── 其他 / 家属 ───────────────────────────────────────────────────
   {
-    name: "小舞", alias: "软骨兔", role: "唐三之妻·历史人物",
+    name: "霍云儿", alias: "", role: "霍雨浩之母·白虎公爵府侍女",
+    faction: "其他",
+    img: "https://bkimg.cdn.bcebos.com/pic/a8773912b31bb051f8192878752ccdb44aed2e734a1e"
+  },
+  {
+    name: "小舞", alias: "软骨兔", role: "唐三之妻·唐舞桐之母",
     faction: "其他",
     img: ""
   },
