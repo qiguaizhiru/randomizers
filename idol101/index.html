@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>国内女团选秀随机抽取器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+    background: #0c0818;
+    color: #fff;
+    overflow-x: hidden;
+  }
+
+  .bg-stars {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse at 30% 40%, rgba(255, 100, 200, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 20%, rgba(100, 200, 255, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(255, 200, 100, 0.08) 0%, transparent 50%);
+  }
+  .star { position: absolute; border-radius: 50%; background: #fff; animation: twinkle ease-in-out infinite; }
+  @keyframes twinkle { 0%,100%{opacity:.2;transform:scale(1)} 50%{opacity:1;transform:scale(1.5)} }
+
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 25px 20px; }
+
+  .header { text-align: center; margin-bottom: 25px; }
+  .header h1 {
+    font-size: 2.4rem; font-weight: 900;
+    background: linear-gradient(135deg, #ff6ec4, #7873f5, #4adede);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; background-size: 300% 300%;
+    animation: gradShift 4s ease infinite;
+  }
+  @keyframes gradShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  .header .sub { color: #666; margin-top: 5px; font-size: 0.85rem; }
+  .header .sub span { color: #ff6ec4; font-weight: 700; }
+
+  .filters {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px; padding: 18px; margin-bottom: 20px;
+  }
+  .filter-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .filter-row:last-child { margin-bottom: 0; }
+  .filter-label { font-size: 0.82rem; color: #888; min-width: 50px; padding-top: 5px; flex-shrink: 0; }
+  .filter-options { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+  .filter-tag {
+    padding: 4px 12px; border-radius: 14px; font-size: 0.8rem; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);
+    color: #999; transition: all 0.25s; white-space: nowrap;
+  }
+  .filter-tag:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .filter-tag.active { color: #fff; border-color: transparent; }
+  .filter-tag.active.f-show { background: linear-gradient(135deg, #ff6ec4, #7873f5); }
+  .filter-tag.active.f-debut { background: linear-gradient(135deg, #4adede, #00b4d8); }
+  .filter-summary { text-align: center; padding: 6px 0 0; font-size: 0.82rem; color: #666; }
+  .filter-summary span { color: #ff6ec4; font-weight: 700; }
+
+  .actions { display: flex; justify-content: center; gap: 20px; margin-bottom: 25px; flex-wrap: wrap; }
+  .draw-btn {
+    padding: 14px 45px; font-size: 1.15rem; font-weight: 700;
+    border: none; border-radius: 50px; cursor: pointer;
+    color: #fff; transition: all 0.3s; font-family: 'Noto Sans SC', sans-serif;
+    position: relative; overflow: hidden;
+  }
+  .draw-btn::before {
+    content:''; position:absolute; top:0; left:-100%; width:100%; height:100%;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);
+    transition: left 0.5s;
+  }
+  .draw-btn:hover::before { left: 100%; }
+  .draw-btn:hover { transform: translateY(-3px); }
+  .draw-btn:active { transform: translateY(0) scale(0.97); }
+  .draw-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+  .btn-single { background: linear-gradient(135deg, #ff6ec4, #7873f5); box-shadow: 0 8px 30px rgba(255,110,196,0.35); }
+  .btn-multi { background: linear-gradient(135deg, #4adede, #00b4d8); box-shadow: 0 8px 30px rgba(74,222,222,0.35); }
+
+  .results { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; min-height: 200px; }
+  .result-placeholder { text-align: center; width: 100%; padding: 50px 0; color: #444; font-size: 1rem; }
+  .result-placeholder .big-icon { font-size: 3.5rem; display: block; margin-bottom: 12px; }
+
+  .person-card {
+    width: 180px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; overflow: hidden; text-align: center; padding: 22px 12px;
+    animation: cardPop 0.6s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+    opacity: 0; transition: transform 0.3s, box-shadow 0.3s; cursor: default;
+  }
+  .person-card:hover { transform: translateY(-8px); box-shadow: 0 12px 35px rgba(255,110,196,0.3); }
+  @keyframes cardPop { 0%{opacity:0;transform:scale(.3) rotateY(90deg)} 60%{transform:scale(1.05) rotateY(-5deg)} 100%{opacity:1;transform:scale(1) rotateY(0)} }
+
+  .person-avatar {
+    width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 2rem;
+    border: 2px solid rgba(255,110,196,0.3);
+  }
+  .av-c101 { background: linear-gradient(135deg, rgba(255,110,196,0.2), rgba(255,80,80,0.2)); }
+  .av-qcny2 { background: linear-gradient(135deg, rgba(120,115,245,0.2), rgba(74,222,222,0.2)); }
+  .av-ccy2020 { background: linear-gradient(135deg, rgba(255,200,100,0.2), rgba(255,110,196,0.2)); }
+
+  .person-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: #fff; }
+  .person-tags { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+  .person-tag { padding: 2px 8px; border-radius: 10px; font-size: 0.65rem; font-weight: 500; }
+  .tag-show-c101 { background: rgba(255,110,196,0.15); color: #ff6ec4; border: 1px solid rgba(255,110,196,0.25); }
+  .tag-show-qcny2 { background: rgba(120,115,245,0.15); color: #7873f5; border: 1px solid rgba(120,115,245,0.25); }
+  .tag-show-ccy2020 { background: rgba(255,200,100,0.15); color: #ffc864; border: 1px solid rgba(255,200,100,0.25); }
+  .tag-debut { background: rgba(74,222,222,0.2); color: #4adede; border: 1px solid rgba(74,222,222,0.3); }
+
+  .person-card.single { width: 240px; padding: 30px 18px; }
+  .person-card.single .person-avatar { width: 100px; height: 100px; font-size: 2.5rem; }
+  .person-card.single .person-name { font-size: 1.35rem; }
+
+  .rolling-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 100; display: none; background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px); justify-content: center; align-items: center; flex-direction: column;
+  }
+  .rolling-overlay.active { display: flex; }
+  .rolling-text { font-size: 2.5rem; font-weight: 900; color: #ff6ec4; text-align: center; padding: 0 20px; animation: pulse 0.15s ease infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.02)} }
+  .rolling-sub { color: #888; margin-top: 15px; font-size: 1rem; }
+
+  .history-section { margin-top: 35px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px; }
+  .history-section h3 { color: #666; font-size: 0.9rem; margin-bottom: 12px; }
+  .history-items { display: flex; flex-wrap: wrap; gap: 6px; }
+  .history-chip { padding: 3px 10px; border-radius: 10px; font-size: 0.72rem; color: #888; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
+
+  .confetti { position: fixed; z-index: 999; pointer-events: none; animation: confDrop linear forwards; }
+  @keyframes confDrop { 0%{transform:translateY(-10vh) rotate(0) scale(1);opacity:1} 100%{transform:translateY(110vh) rotate(1080deg) scale(.5);opacity:0} }
+
+  @media (max-width:600px) {
+    .header h1 { font-size: 1.7rem; }
+    .draw-btn { padding: 10px 28px; font-size: 1rem; }
+    .person-card { width: 150px; padding: 16px 8px; }
+    .person-card.single { width: 190px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-stars" id="bgStars"></div>
+<div class="rolling-overlay" id="rollingOverlay">
+  <div class="rolling-text" id="rollingText">...</div>
+  <div class="rolling-sub" id="rollingSub">抽取中...</div>
+</div>
+
+<div class="container">
+  <div class="header">
+    <h1>国内女团选秀随机抽取器</h1>
+    <p class="sub">创造101 + 青春有你2 + 创造营2020 | 共 <span id="totalCount">0</span> 位选手</p>
+  </div>
+
+  <div class="filters">
+    <div class="filter-row"><div class="filter-label">节目</div><div class="filter-options" id="fShow"></div></div>
+    <div class="filter-row"><div class="filter-label">出道</div><div class="filter-options" id="fDebut"></div></div>
+    <div class="filter-summary">符合条件：<span id="filteredCount">0</span> 位选手</div>
+  </div>
+
+  <div class="actions">
+    <button class="draw-btn btn-single" id="btnSingle" onclick="draw(1)">单抽</button>
+    <button class="draw-btn btn-multi" id="btnMulti" onclick="draw(5)">五连抽</button>
+  </div>
+
+  <div class="results" id="results">
+    <div class="result-placeholder"><span class="big-icon">&#127775;</span>选择筛选条件，然后点击抽取吧！</div>
+  </div>
+
+  <div class="history-section" id="historySection" style="display:none;">
+    <h3>抽取历史</h3>
+    <div class="history-items" id="historyItems"></div>
+  </div>
+</div>
+
+<script>
+// [name, show, debut(bool)]
+const rawData = [
+  // ===== 创造101 - 火箭少女101出道 =====
+  ["孟美岐","创造101",true],["吴宣仪","创造101",true],["杨超越","创造101",true],["段奥娟","创造101",true],
+  ["Yamy","创造101",true],["赖美云","创造101",true],["张紫宁","创造101",true],["Sunnee","创造101",true],
+  ["李紫婷","创造101",true],["傅菁","创造101",true],["徐梦洁","创造101",true],
+  // 创造101 未出道
+  ["李子璇","创造101",false],["刘人语","创造101",false],["陈意涵","创造101",false],["王菊","创造101",false],
+  ["高秋梓","创造101",false],["高颖浠","创造101",false],["戚砚笛","创造101",false],["许靖韵","创造101",false],
+  ["吕小雨","创造101",false],["强东玥","创造101",false],["吴映香","创造101",false],["蒋申","创造101",false],
+  ["赵尧珂","创造101",false],["苏芮琪","创造101",false],["陈芳语","创造101",false],["吴芊盈","创造101",false],
+  ["范薇","创造101",false],["王莫涵","创造101",false],["魏瑾","创造101",false],["王婷","创造101",false],
+  ["鹿小草","创造101",false],["刘丹萌","创造101",false],["罗怡恬","创造101",false],["焦曼婷","创造101",false],
+  ["罗奕佳","创造101",false],["杜金雨","创造101",false],["朱天天","创造101",false],["张楚寒","创造101",false],
+  ["林君怡","创造101",false],["葛佳慧","创造101",false],["刘思纤","创造101",false],["向俞星","创造101",false],
+  ["刘德熙","创造101",false],["丑丑","创造101",false],["罗智仪","创造101",false],["菊麟","创造101",false],
+  ["张溪","创造101",false],["勾雪莹","创造101",false],["许诗茵","创造101",false],["陈盈燕","创造101",false],
+  ["姜彦汐","创造101",false],["周雪","创造101",false],["吴小萱","创造101",false],["张静萱","创造101",false],
+  ["张馨月","创造101",false],["张新洁","创造101",false],["任真","创造101",false],["倪秋云","创造101",false],
+  ["杨蕊菡","创造101",false],["杨美琪","创造101",false],["毛唯嘉","创造101",false],["林珈安","创造101",false],
+  ["邵夏","创造101",false],["王一桥","创造101",false],["刘宇珊","创造101",false],["朱佳希","创造101",false],
+  ["杨美玲","创造101",false],["刘尼夷","创造101",false],["韩丹","创造101",false],["尹柔懿","创造101",false],
+  ["罗天舒","创造101",false],["杨晗","创造101",false],["刘佳莹","创造101",false],["吴昀廷","创造101",false],
+  ["王曼君","创造101",false],["张瑜纹","创造101",false],["颜可欣","创造101",false],["王珏萌","创造101",false],
+  ["邱路晴","创造101",false],["郑丞丞","创造101",false],["王亦然","创造101",false],["邵西蒙娜","创造101",false],
+  ["江璟儿","创造101",false],["潘珺雅","创造101",false],["张芮萌","创造101",false],["王玥","创造101",false],
+  ["张鑫磊","创造101",false],["王晴","创造101",false],["于美红","创造101",false],["刘念","创造101",false],
+  ["吴茜","创造101",false],["陈怡凡","创造101",false],["胡悦儿","创造101",false],["李天韵","创造101",false],
+  ["杨冰","创造101",false],["陈语嫣","创造101",false],["夏诗洁","创造101",false],["马兴钰","创造101",false],
+  ["王雅凛","创造101",false],["尹蕊","创造101",false],["赵羚","创造101",false],["热依娜","创造101",false],
+  ["范丽娜","创造101",false],["王小蝶","创造101",false],["吉星月","创造101",false],
+
+  // ===== 青春有你2 - THE9出道 =====
+  ["刘雨昕","青春有你2",true],["虞书欣","青春有你2",true],["许佳琪","青春有你2",true],["喻言","青春有你2",true],
+  ["谢可寅","青春有你2",true],["安崎","青春有你2",true],["赵小棠","青春有你2",true],["孔雪儿","青春有你2",true],
+  ["陆柯燃","青春有你2",true],
+  // 青春有你2 未出道
+  ["乃万","青春有你2",false],["金子涵","青春有你2",false],["王承渲","青春有你2",false],["曾可妮","青春有你2",false],
+  ["刘令姿","青春有你2",false],["戴萌","青春有你2",false],["上官喜爱","青春有你2",false],["孙芮","青春有你2",false],
+  ["徐紫茵","青春有你2",false],["宋昕冉","青春有你2",false],["戴燕妮","青春有你2",false],["林凡","青春有你2",false],
+  ["莫寒","青春有你2",false],["张语格","青春有你2",false],["段艺璇","青春有你2",false],["蔡卓宜","青春有你2",false],
+  ["葛鑫怡","青春有你2",false],["许馨文","青春有你2",false],["左卓","青春有你2",false],["许杨玉琢","青春有你2",false],
+  ["陈珏","青春有你2",false],["张钰","青春有你2",false],["傅如乔","青春有你2",false],["朱林雨","青春有你2",false],
+  ["林小宅","青春有你2",false],["徐轸轸","青春有你2",false],["李依宸","青春有你2",false],["费沁源","青春有你2",false],
+  ["宋昭艺","青春有你2",false],["苏杉杉","青春有你2",false],["七穗","青春有你2",false],["秦牛正威","青春有你2",false],
+  ["夏研","青春有你2",false],["冯若航","青春有你2",false],["王清","青春有你2",false],["魏辰","青春有你2",false],
+  ["陈品瑄","青春有你2",false],["胡馨尹","青春有你2",false],["陈昕葳","青春有你2",false],["马蜀君","青春有你2",false],
+  ["王欣宇","青春有你2",false],["符雅凝","青春有你2",false],["段小薇","青春有你2",false],["孙美楠","青春有你2",false],
+  ["韩东","青春有你2",false],["靳阳阳","青春有你2",false],["黄欣苑","青春有你2",false],["王婉辰","青春有你2",false],
+  ["张梦露","青春有你2",false],["黄小芸","青春有你2",false],["文哲","青春有你2",false],["熊钰清","青春有你2",false],
+  ["阿依莎","青春有你2",false],["艾霖","青春有你2",false],["艾依依","青春有你2",false],["陈艺文","青春有你2",false],
+  ["程曼鑫","青春有你2",false],["杜紫怡","青春有你2",false],["符佳","青春有你2",false],["何美延","青春有你2",false],
+  ["黄一鸣","青春有你2",false],["金吉雅","青春有你2",false],["林慧博","青春有你2",false],["林韦希","青春有你2",false],
+  ["刘海涵","青春有你2",false],["刘亚楠","青春有你2",false],["米拉","青春有你2",false],["墨谣","青春有你2",false],
+  ["欧若拉","青春有你2",false],["权笑迎","青春有你2",false],["申清","青春有你2",false],["申玉","青春有你2",false],
+  ["申洁","青春有你2",false],["沈莹","青春有你2",false],["粟钦柔","青春有你2",false],["唐珂伊","青春有你2",false],
+  ["汪睿","青春有你2",false],["王姝慧","青春有你2",false],["王思予","青春有你2",false],["王心茗","青春有你2",false],
+  ["王雅乐","青春有你2",false],["王瑶瑶","青春有你2",false],["未书羽","青春有你2",false],["希娅","青春有你2",false],
+  ["徐百仪","青春有你2",false],["杨宇彤","青春有你2",false],["姚依凡","青春有你2",false],["查祎琛","青春有你2",false],
+  ["卓依娜姆","青春有你2",false],["邹思扬","青春有你2",false],["申冰","青春有你2",false],["李熙凝","青春有你2",false],
+
+  // ===== 创造营2020 - 硬糖少女303出道 =====
+  ["希林娜依高","创造营2020",true],["赵粤","创造营2020",true],["王艺瑾","创造营2020",true],
+  ["陈卓璇","创造营2020",true],["郑乃馨","创造营2020",true],["刘些宁","创造营2020",true],["张艺凡","创造营2020",true],
+  // 创造营2020 未出道
+  ["徐艺洋","创造营2020",false],["朱主爱","创造营2020",false],["苏芮琪","创造营2020",false],
+  ["刘梦","创造营2020",false],["伍雅露","创造营2020",false],["许潇晗","创造营2020",false],
+  ["孙珍妮","创造营2020",false],["田京凡","创造营2020",false],["华承妍","创造营2020",false],
+  ["谢安然","创造营2020",false],["拉娜","创造营2020",false],["姚慧","创造营2020",false],
+  ["马思惠","创造营2020",false],["陈倩楠","创造营2020",false],["李梦琦","创造营2020",false],
+  ["仲菲菲","创造营2020",false],["胡嘉欣","创造营2020",false],["张清","创造营2020",false],
+  ["曾雪瑶","创造营2020",false],["陈珂","创造营2020",false],["李佳恩","创造营2020",false],
+  ["康汐","创造营2020",false],["胡玛尔","创造营2020",false],["钟欣","创造营2020",false],
+  ["敖心仪","创造营2020",false],["黄恩茹","创造营2020",false],["张馨文","创造营2020",false],
+  ["冯琬贺","创造营2020",false],["李紫梦","创造营2020",false],["妙静鸥","创造营2020",false],
+  ["孙如云","创造营2020",false],["屠芷莹","创造营2020",false],["吉扬柳","创造营2020",false],
+  ["马玉灵","创造营2020",false],["朱苓","创造营2020",false],["崔文美秀","创造营2020",false],
+  ["高直","创造营2020",false],["于扬子","创造营2020",false],["王丽娜","创造营2020",false],
+  ["余子鱼","创造营2020",false],["卞卡","创造营2020",false],["张雅卓","创造营2020",false],
+  ["史芮伊","创造营2020",false],["刘雨露","创造营2020",false],["孟欢","创造营2020",false],
+  ["万芳舟","创造营2020",false],["袁嘉艺","创造营2020",false],["陈俞瑾","创造营2020",false],
+  ["林嘉慧","创造营2020",false],["张欣媚","创造营2020",false],["曾淑岩","创造营2020",false],
+  ["舒一灵","创造营2020",false],["姜丹","创造营2020",false],["张馨允","创造营2020",false],
+  ["丁诗妤","创造营2020",false],["王雨朵","创造营2020",false],["文婕","创造营2020",false],
+  ["王曦瑶","创造营2020",false],["鹂蔓","创造营2020",false],["陈欣叶","创造营2020",false],
+  ["李惠玉","创造营2020",false],["黄碧茵","创造营2020",false],["李丞汐","创造营2020",false],
+  ["李保怡","创造营2020",false],["庞雪倩","创造营2020",false],["毕少岩","创造营2020",false],
+  ["潘小雪","创造营2020",false],["沈小婷","创造营2020",false],["卫倩妮","创造营2020",false],
+  ["吴妙茵","创造营2020",false],["谭思慧","创造营2020",false],["李雨露","创造营2020",false],
+  ["陈柔冰","创造营2020",false],["吕欣蔚","创造营2020",false],["宋宇苗","创造营2020",false],
+  ["李佳洁","创造营2020",false],["张纯如","创造营2020",false],["刘诗琦","创造营2020",false],
+  ["王靖贤","创造营2020",false],["谢樱俊","创造营2020",false],["吴晓凝","创造营2020",false],
+  ["周雨霖","创造营2020",false],["孙露鹭","创造营2020",false],["黄若元","创造营2020",false],
+  ["谢安诗","创造营2020",false],["赵天爱","创造营2020",false],["温馨","创造营2020",false],
+  ["黄雨晴","创造营2020",false],["胡娅楠","创造营2020",false],["姜贞羽","创造营2020",false],
+  ["王柯","创造营2020",false],["刘念","创造营2020",false],["林君怡","创造营2020",false],
+  ["王一桥","创造营2020",false],
+];
+
+const database = rawData.map(([name, show, debut]) => ({ name, show, debut }));
+
+(function() {
+  let filters = { show: '全部', debut: '全部' };
+  let history = [];
+  let isRolling = false;
+
+  const showOpts = ['全部', '创造101', '青春有你2', '创造营2020'];
+  const debutOpts = ['全部', '已出道', '未出道'];
+
+  const showTag = {'创造101':'tag-show-c101','青春有你2':'tag-show-qcny2','创造营2020':'tag-show-ccy2020'};
+  const showAvatar = {'创造101':'av-c101','青春有你2':'av-qcny2','创造营2020':'av-ccy2020'};
+  const showGroup = {'创造101':'火箭少女101','青春有你2':'THE9','创造营2020':'硬糖少女303'};
+  const emojis = ['&#127775;','&#128171;','&#127800;','&#10024;','&#127942;','&#128142;','&#127774;','&#9733;'];
+
+  const sc = document.getElementById('bgStars');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = Math.random()*100+'%'; s.style.top = Math.random()*100+'%';
+    const sz = Math.random()*2+1; s.style.width=sz+'px'; s.style.height=sz+'px';
+    s.style.animationDuration = (Math.random()*3+2)+'s'; s.style.animationDelay = (Math.random()*3)+'s';
+    sc.appendChild(s);
+  }
+
+  function makeRow(id, opts, key, cls) {
+    const el = document.getElementById(id);
+    opts.forEach(opt => {
+      const t = document.createElement('span');
+      t.className = 'filter-tag ' + cls + (opt==='全部'?' active':'');
+      t.textContent = opt;
+      t.onclick = () => {
+        el.querySelectorAll('.filter-tag').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        filters[key] = opt;
+        updateCount();
+      };
+      el.appendChild(t);
+    });
+  }
+
+  makeRow('fShow', showOpts, 'show', 'f-show');
+  makeRow('fDebut', debutOpts, 'debut', 'f-debut');
+
+  function getFiltered() {
+    return database.filter(c => {
+      if (filters.show !== '全部' && c.show !== filters.show) return false;
+      if (filters.debut !== '全部') {
+        if (filters.debut === '已出道' && !c.debut) return false;
+        if (filters.debut === '未出道' && c.debut) return false;
+      }
+      return true;
+    });
+  }
+
+  function updateCount() {
+    const n = getFiltered().length;
+    document.getElementById('filteredCount').textContent = n;
+    document.getElementById('btnSingle').disabled = n === 0;
+    document.getElementById('btnMulti').disabled = n < 1;
+  }
+
+  window.draw = function(count) {
+    if (isRolling) return;
+    const pool = getFiltered();
+    if (!pool.length) return;
+    isRolling = true;
+    const ov = document.getElementById('rollingOverlay');
+    const rt = document.getElementById('rollingText');
+    document.getElementById('rollingSub').textContent = count===1?'单抽中...':'五连抽中...';
+    ov.classList.add('active');
+    let tick = 0, total = 25;
+    function doTick() {
+      rt.textContent = pool[Math.floor(Math.random()*pool.length)].name;
+      tick++;
+      if (tick < total) setTimeout(doTick, 40 + tick*tick*1.5);
+      else setTimeout(() => {
+        ov.classList.remove('active');
+        isRolling = false;
+        const picked = [], used = new Set();
+        for (let i = 0; i < count; i++) {
+          let t = 0, item;
+          do { item = pool[Math.floor(Math.random()*pool.length)]; t++; }
+          while (used.has(item.name) && t < 100 && pool.length > count);
+          used.add(item.name); picked.push(item);
+        }
+        showResults(picked, count===1);
+        picked.forEach(p => history.unshift(p.name));
+        updateHistory(); shootConfetti();
+      }, 300);
+    }
+    doTick();
+  };
+
+  function showResults(items, single) {
+    const c = document.getElementById('results');
+    c.innerHTML = '';
+    items.forEach((item, i) => {
+      const card = document.createElement('div');
+      card.className = 'person-card' + (single?' single':'');
+      card.style.animationDelay = (i*0.12)+'s';
+      const emoji = emojis[Math.floor(Math.random()*emojis.length)];
+      const avClass = showAvatar[item.show] || '';
+      const tagClass = showTag[item.show] || '';
+
+      card.innerHTML = `
+        <div class="person-avatar ${avClass}">${emoji}</div>
+        <div class="person-name">${item.name}</div>
+        <div class="person-tags">
+          <span class="person-tag ${tagClass}">${item.show}</span>
+          ${item.debut ? `<span class="person-tag tag-debut">${showGroup[item.show]}</span>` : ''}
+        </div>
+      `;
+      c.appendChild(card);
+    });
+  }
+
+  function updateHistory() {
+    const s = document.getElementById('historySection');
+    const c = document.getElementById('historyItems');
+    if (!history.length) { s.style.display='none'; return; }
+    s.style.display='block';
+    c.innerHTML = history.slice(0,30).map(h => `<span class="history-chip">${h}</span>`).join('');
+  }
+
+  function shootConfetti() {
+    const colors = ['#ff6ec4','#7873f5','#4adede','#ffd740','#ff5252','#69f0ae'];
+    for (let i = 0; i < 50; i++) {
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      el.style.left = Math.random()*100+'vw';
+      el.style.width = (Math.random()*10+5)+'px'; el.style.height = (Math.random()*10+5)+'px';
+      el.style.background = colors[Math.floor(Math.random()*colors.length)];
+      el.style.borderRadius = Math.random()>.5?'50%':'2px';
+      el.style.animationDuration = (Math.random()*2+1.5)+'s';
+      el.style.animationDelay = (Math.random()*.6)+'s';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+  }
+
+  document.getElementById('totalCount').textContent = database.length;
+  updateCount();
+})();
+</script>
+</body>
+</html>
